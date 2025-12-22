@@ -7,6 +7,8 @@ import {
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
@@ -18,6 +20,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOutUser: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -78,6 +81,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // ✅ New function for Google Sign-In
+  const signInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user already exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          email: user.email,
+          name: user.displayName || '',
+          role: 'user',
+          createdAt: serverTimestamp(),
+          orders: [],
+        });
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      throw error;
+    }
+  };
+
   const signOutUser = async () => {
     try {
       await signOut(auth);
@@ -96,6 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signUp,
         signIn,
         signOutUser,
+        signInWithGoogle,
         isAdmin,
       }}
     >
