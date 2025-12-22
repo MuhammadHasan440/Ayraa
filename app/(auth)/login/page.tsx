@@ -2,15 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/';
   const { signIn, loading } = useAuth();
   
   const [formData, setFormData] = useState({
@@ -26,7 +24,8 @@ export default function LoginPage() {
 
     try {
       await signIn(formData.email, formData.password);
-      router.push(redirect);
+      // Remove redirect parameter or handle it differently
+      router.push('/'); // Always redirect to home
     } catch (error: any) {
       setError(error.message || 'Failed to sign in. Please check your credentials.');
     }

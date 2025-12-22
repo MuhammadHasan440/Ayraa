@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '@/components/products/productCard';
@@ -15,7 +15,8 @@ import {
   TrendingUp, 
   Clock,
   ChevronDown,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 
 // Add this currency formatter function
@@ -33,7 +34,8 @@ const ensureArray = (data: any): string[] => {
   return Array.isArray(data) ? data : [data];
 };
 
-export default function ProductsPage() {
+// Create a separate component that uses useSearchParams
+function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -86,8 +88,8 @@ export default function ProductsPage() {
           .filter(Boolean) as Product[];
 
         setProducts(data);
-      } catch (err) {
-        console.error('Firestore error:', err);
+      } catch (error) {
+        console.error('Error fetching products:', error);
       } finally {
         setLoading(false);
       }
@@ -453,9 +455,8 @@ export default function ProductsPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.05 }}
                       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                      className="hover:shadow-xl transition-shadow duration-300" // FIX: Moved className here
+                      className="hover:shadow-xl transition-shadow duration-300"
                     >
-                      {/* FIX: Remove className from ProductCard */}
                       <ProductCard product={product} view={viewMode} />
                     </motion.div>
                   ))}
@@ -593,5 +594,28 @@ export default function ProductsPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-white to-rose-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center">
+            <Loader2 className="w-12 h-12 animate-spin text-rose-600" />
+          </div>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+            Loading Products
+          </h3>
+          <p className="text-gray-500">
+            Please wait while we load our curated collection...
+          </p>
+        </div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
