@@ -194,7 +194,7 @@ export default function CheckoutPage() {
       // Auto-redirect after 8 seconds
       setTimeout(() => {
         router.push('/products');
-      }, 8000);
+      }, 3000);
 
     } catch (error) {
       console.error('Error placing order:', error);
