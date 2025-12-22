@@ -63,11 +63,8 @@ export default function CheckoutPage() {
   const [easypaisaNumber, setEasypaisaNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/login?redirect=/checkout');
-    }
-  }, [user, router]);
+  
+   
 
   useEffect(() => {
     if (user && userData) {

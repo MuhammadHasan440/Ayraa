@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trash2, 
@@ -34,6 +35,7 @@ const formatPKR = (amount: number): string => {
 const FREE_SHIPPING_THRESHOLD = 10000; // PKR 10,000
 
 export default function CartPage() {
+  const router = useRouter();
   const { state, dispatch } = useCart();
   const { user } = useAuth();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -56,9 +58,15 @@ export default function CartPage() {
 
   const handleCheckout = () => {
     if (!user) {
-      window.location.href = `/login?redirect=${encodeURIComponent('/checkout')}`;
+      // Store current page to return after login
+      sessionStorage.setItem('redirectAfterLogin', '/cart');
+      
+      // Redirect to login page
+      router.push('/login');
       return;
     }
+
+    // User is logged in, proceed to checkout
     setIsCheckingOut(true);
     setTimeout(() => {
       window.location.href = '/checkout';
@@ -381,24 +389,56 @@ export default function CartPage() {
               </p>
             </div>
 
-            {/* Checkout Button */}
-            <button
-              onClick={handleCheckout}
-              disabled={isCheckingOut}
-              className="w-full bg-rose-600 text-white py-4 rounded-lg hover:bg-rose-700 transition-colors font-medium flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-            >
-              {isCheckingOut ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  Proceed to Checkout
+            {/* Checkout Button - Updated with Authentication Check */}
+            {user ? (
+              <button
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                className="w-full bg-rose-600 text-white py-4 rounded-lg hover:bg-rose-700 transition-colors font-medium flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              >
+                {isCheckingOut ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Proceed to Checkout
+                    <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <button
+                  onClick={handleCheckout}
+                  className="w-full bg-rose-600 text-white py-4 rounded-lg hover:bg-rose-700 transition-colors font-medium flex items-center justify-center gap-3 mb-2"
+                >
                   <ArrowRight size={20} />
-                </>
+                  Proceed to Checkout
+                </button>
+                <p className="text-sm text-center text-gray-600">
+                  You'll be asked to log in or create an account to continue
+                </p>
+              </div>
+            )}
+
+            {/* User Status Indicator */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Account Status:</span>
+                <span className={`font-medium ${user ? 'text-green-600' : 'text-amber-600'}`}>
+                  {user ? `Logged in as ${user.email?.split('@')[0]}` : 'Guest User'}
+                </span>
+              </div>
+              {!user && (
+                <p className="text-xs text-gray-500 mt-1">
+                  <Link href="/login" className="text-rose-600 hover:underline">
+                    Sign in
+                  </Link> for faster checkout and order tracking
+                </p>
               )}
-            </button>
+            </div>
 
             {/* Security Badge */}
             <div className="flex items-center justify-center gap-2 text-sm text-gray-600 mb-6">

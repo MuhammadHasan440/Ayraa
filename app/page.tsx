@@ -43,7 +43,7 @@ export default function HomePage() {
     {
       icon: <Truck className="w-8 h-8" />,
       title: 'Free Shipping',
-      description: 'On orders over Rs:5000',
+      description: 'On orders over Rs:10,000',
     },
     {
       icon: <Shield className="w-8 h-8" />,
@@ -78,7 +78,7 @@ export default function HomePage() {
           >
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-100 text-rose-700 text-sm font-medium mb-4">
               <Sparkles size={16} />
-              New Collection 2024
+              New Collection 2026
             </span>
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Elegant Style

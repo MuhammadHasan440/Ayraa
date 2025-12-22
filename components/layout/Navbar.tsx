@@ -48,7 +48,7 @@ const Navbar = () => {
         {/* Top Bar */}
         <div className="hidden md:flex justify-between items-center py-2 border-b text-sm text-gray-600">
           <div className="flex items-center gap-4">
-            <span>Free shipping on orders over Rs: 5000</span>
+            <span>Free shipping on orders over Rs: 10,000</span>
             <span className="hidden lg:inline">•</span>
             <span className="hidden lg:inline">30-day return policy</span>
           </div>
