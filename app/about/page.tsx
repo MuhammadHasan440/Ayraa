@@ -42,8 +42,8 @@ export default function AboutPage() {
   ];
 
   const stats = [
-    { number: "10K+", label: "Happy Customers" },
-    { number: "500+", label: "Cities Served" },
+    { number: "100+", label: "Happy Customers" },
+    { number: "2+", label: "Cities Served" },
     { number: "99%", label: "Positive Reviews" },
     { number: "24/7", label: "Customer Support" }
   ];

@@ -19,12 +19,82 @@ import {
   Heart,
   CreditCard,
   Bell,
-  Globe
+  Globe,
+  ShoppingBag,
+  Truck,
+  CheckCircle,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
-import { doc, updateDoc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, query, where, orderBy, getDocs, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
+import toast from 'react-hot-toast';
+
+// Simple date formatter (remove date-fns dependency)
+const formatDate = (date: any): string => {
+  if (!date) return 'N/A';
+  
+  try {
+    let dateObj: Date;
+    
+    // Handle Firestore Timestamp
+    if (date.toDate && typeof date.toDate === 'function') {
+      dateObj = date.toDate();
+    } else if (date instanceof Date) {
+      dateObj = date;
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date);
+    } else if (date.seconds) {
+      // Firestore timestamp with seconds
+      dateObj = new Date(date.seconds * 1000);
+    } else {
+      dateObj = new Date();
+    }
+    
+    // Check if date is valid
+    if (isNaN(dateObj.getTime())) {
+      return 'Invalid date';
+    }
+    
+    // Format date in Pakistani style
+    return dateObj.toLocaleDateString('en-PK', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
+// PKR currency formatter
+const formatPKR = (amount: number): string => {
+  return new Intl.NumberFormat('en-PK', {
+    style: 'currency',
+    currency: 'PKR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+// Pakistani cities for dropdown
+const PAKISTANI_CITIES = [
+  'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
+  'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala',
+  'Hyderabad', 'Sukkur', 'Bahawalpur', 'Abbottabad', 'Mardan'
+];
+
+// Pakistani provinces
+const PAKISTANI_PROVINCES = [
+  'Punjab', 'Sindh', 'Khyber Pakhtunkhwa', 'Balochistan',
+  'Gilgit-Baltistan', 'Azad Jammu & Kashmir'
+];
 
 interface UserProfile {
   uid: string;
@@ -35,8 +105,8 @@ interface UserProfile {
   address?: {
     street: string;
     city: string;
-    state: string;
-    zipCode: string;
+    province: string;
+    postalCode: string;
     country: string;
   };
   dateOfBirth?: string;
@@ -49,22 +119,64 @@ interface UserProfile {
   createdAt: string;
 }
 
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+  size?: string;
+  color?: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  shippingCost: number;
+  taxAmount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  paymentMethod: string;
+  shippingAddress: any;
+  createdAt: any;
+  updatedAt: any;
+}
+
+interface WishlistItem {
+  id: string;
+  productId: string;
+  userId: string;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    images: string[];
+    category: string;
+    isNewArrival: boolean;
+    createdAt: any;
+  };
+  addedAt: any;
+}
+
 export default function AccountPage() {
   const router = useRouter();
-  const { user } = useAuth(); // Removed logout since we'll use signOut directly
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'orders' | 'wishlist' | 'notifications'>('profile');
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
-    phoneNumber: '',
+    phoneNumber: '+92',
     address: {
       street: '',
       city: '',
-      state: '',
-      zipCode: '',
-      country: 'India',
+      province: '',
+      postalCode: '',
+      country: 'Pakistan',
     },
     dateOfBirth: '',
     gender: 'prefer-not-to-say' as 'male' | 'female' | 'other' | 'prefer-not-to-say',
@@ -86,15 +198,18 @@ export default function AccountPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState('');
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [isLoadingWishlist, setIsLoadingWishlist] = useState(false);
 
-  // Custom logout function since your AuthContext doesn't have it
   const handleLogout = async () => {
     try {
       await signOut(auth);
       router.push('/');
+      toast.success('Logged out successfully');
     } catch (error) {
       console.error('Error logging out:', error);
+      toast.error('Failed to log out');
     }
   };
 
@@ -110,20 +225,20 @@ export default function AccountPage() {
         
         // Fetch additional user data from Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
-        const userData = userDoc.data();
+        const userData = userDoc.data() as DocumentData;
         
         const userProfile: UserProfile = {
           uid: user.uid,
-          displayName: user.displayName || '',
+          displayName: user.displayName || userData?.name || '',
           email: user.email || '',
-          phoneNumber: user.phoneNumber || userData?.phoneNumber || '',
+          phoneNumber: user.phoneNumber || userData?.phone || '+92',
           photoURL: user.photoURL || '',
           address: userData?.address || {
             street: '',
             city: '',
-            state: '',
-            zipCode: '',
-            country: 'India',
+            province: '',
+            postalCode: '',
+            country: 'Pakistan',
           },
           dateOfBirth: userData?.dateOfBirth || '',
           gender: userData?.gender || 'prefer-not-to-say',
@@ -139,13 +254,13 @@ export default function AccountPage() {
         setFormData({
           displayName: userProfile.displayName,
           email: userProfile.email,
-          phoneNumber: userProfile.phoneNumber || '',
+          phoneNumber: userProfile.phoneNumber || '+92',
           address: userProfile.address || {
             street: '',
             city: '',
-            state: '',
-            zipCode: '',
-            country: 'India',
+            province: '',
+            postalCode: '',
+            country: 'Pakistan',
           },
           dateOfBirth: userProfile.dateOfBirth || '',
           gender: userProfile.gender || 'prefer-not-to-say',
@@ -156,23 +271,9 @@ export default function AccountPage() {
           emailNotifications: true,
         });
 
-        // Fetch recent orders - check if orders collection exists first
-        try {
-          const ordersQuery = query(
-            collection(db, 'orders'),
-            where('userId', '==', user.uid),
-            orderBy('createdAt', 'desc'),
-            limit(5)
-          );
-          const ordersSnapshot = await getDocs(ordersQuery);
-          setRecentOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } catch (orderError) {
-          console.log('No orders found or orders collection not set up yet');
-          setRecentOrders([]);
-        }
-
       } catch (error) {
         console.error('Error fetching user data:', error);
+        toast.error('Failed to load profile data');
       } finally {
         setLoading(false);
       }
@@ -180,6 +281,114 @@ export default function AccountPage() {
 
     fetchUserData();
   }, [user, router]);
+
+  // Fetch user's orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!user) return;
+
+      try {
+        const ordersQuery = query(
+          collection(db, 'orders'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const ordersSnapshot = await getDocs(ordersQuery);
+        const ordersData = ordersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Order[];
+        
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast.error('Failed to load orders');
+      }
+    };
+
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [user, activeTab]);
+
+  // Fetch user's wishlist
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (!user) return;
+
+      setIsLoadingWishlist(true);
+      try {
+        const wishlistQuery = query(
+          collection(db, 'wishlist'),
+          where('userId', '==', user.uid),
+          orderBy('addedAt', 'desc')
+        );
+        const wishlistSnapshot = await getDocs(wishlistQuery);
+        
+        const wishlistItems: WishlistItem[] = [];
+        
+        for (const wishlistDoc of wishlistSnapshot.docs) {
+          const data = wishlistDoc.data() as DocumentData;
+          const productDoc = await getDoc(doc(db, 'products', data.productId));
+          
+          if (productDoc.exists()) {
+            const productData = productDoc.data() as DocumentData;
+            wishlistItems.push({
+              id: wishlistDoc.id,
+              productId: data.productId,
+              userId: data.userId,
+              product: {
+                id: productDoc.id,
+                name: productData.name || '',
+                price: productData.price || 0,
+                images: productData.images || [],
+                category: productData.category || '',
+                isNewArrival: productData.isNewArrival || false,
+                createdAt: productData.createdAt
+              },
+              addedAt: data.addedAt
+            });
+          }
+        }
+        
+        setWishlist(wishlistItems);
+      } catch (error) {
+        console.error('Error fetching wishlist:', error);
+        toast.error('Failed to load wishlist');
+      } finally {
+        setIsLoadingWishlist(false);
+      }
+    };
+
+    if (activeTab === 'wishlist') {
+      fetchWishlist();
+    }
+  }, [user, activeTab]);
+
+  // Remove item from wishlist
+  const removeFromWishlist = async (wishlistId: string) => {
+    if (!user) return;
+
+    try {
+      await updateDoc(doc(db, 'wishlist', wishlistId), {
+        isActive: false,
+        removedAt: new Date()
+      });
+      
+      setWishlist(prev => prev.filter(item => item.id !== wishlistId));
+      toast.success('Removed from wishlist');
+    } catch (error) {
+      console.error('Error removing from wishlist:', error);
+      toast.error('Failed to remove from wishlist');
+    }
+  };
+
+  // Move to cart from wishlist
+  const moveToCart = async (productId: string) => {
+    // You would implement your cart logic here
+    toast.success('Product added to cart');
+    // You might want to remove from wishlist after moving to cart
+  };
 
   const handleProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -200,7 +409,6 @@ export default function AccountPage() {
       }));
     }
     
-    // Clear error for this field
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -234,8 +442,10 @@ export default function AccountPage() {
       newErrors.email = 'Please enter a valid email';
     }
     
-    if (formData.phoneNumber && !/^[\+]?[1-9]\d{1,14}$/.test(formData.phoneNumber.replace(/\D/g, ''))) {
-      newErrors.phoneNumber = 'Please enter a valid phone number';
+    // Pakistani phone validation
+    const phoneRegex = /^(\+92|0)[1-9][0-9]{9}$/;
+    if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber.replace(/\s/g, ''))) {
+      newErrors.phoneNumber = 'Valid Pakistani phone number required (e.g., +92 3XX XXXXXXX)';
     }
     
     if (formData.dateOfBirth) {
@@ -287,7 +497,8 @@ export default function AccountPage() {
       
       // Update additional data in Firestore
       await updateDoc(doc(db, 'users', user.uid), {
-        phoneNumber: formData.phoneNumber,
+        name: formData.displayName,
+        phone: formData.phoneNumber,
         address: formData.address,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
@@ -295,11 +506,13 @@ export default function AccountPage() {
       });
       
       setSuccessMessage('Profile updated successfully!');
+      toast.success('Profile updated successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (error: any) {
       console.error('Error updating profile:', error);
       setErrors({ submit: error.message || 'Failed to update profile' });
+      toast.error('Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -326,6 +539,7 @@ export default function AccountPage() {
       await updatePassword(user, passwordData.newPassword);
       
       setSuccessMessage('Password updated successfully!');
+      toast.success('Password updated successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
       
       // Clear password form
@@ -346,6 +560,7 @@ export default function AccountPage() {
       }
       
       setErrors({ submit: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -365,22 +580,27 @@ export default function AccountPage() {
       });
       
       setSuccessMessage('Preferences updated successfully!');
+      toast.success('Preferences updated successfully');
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (error) {
       console.error('Error updating preferences:', error);
       setErrors({ submit: 'Failed to update preferences' });
+      toast.error('Failed to update preferences');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'shipped': return 'bg-blue-100 text-blue-800';
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'pending': return 'bg-orange-100 text-orange-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   if (loading && !profile) {
@@ -413,7 +633,7 @@ export default function AccountPage() {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Account</h1>
-          <p className="text-gray-600">Manage your profile, security, and preferences</p>
+          <p className="text-gray-600">Manage your profile, orders, and preferences</p>
         </motion.div>
 
         {/* Success Message */}
@@ -505,7 +725,7 @@ export default function AccountPage() {
                   <Package size={20} />
                   <span className="font-medium">My Orders</span>
                   <span className="ml-auto px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full">
-                    {recentOrders.length}
+                    {orders.length}
                   </span>
                 </button>
 
@@ -519,6 +739,9 @@ export default function AccountPage() {
                 >
                   <Heart size={20} />
                   <span className="font-medium">Wishlist</span>
+                  <span className="ml-auto px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full">
+                    {wishlist.length}
+                  </span>
                 </button>
 
                 <button
@@ -601,7 +824,9 @@ export default function AccountPage() {
                           errors.email ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="your@email.com"
+                        disabled
                       />
+                      <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                       {errors.email && (
                         <p className="mt-1 text-sm text-red-600">{errors.email}</p>
                       )}
@@ -611,7 +836,7 @@ export default function AccountPage() {
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                         <Phone size={16} />
-                        Phone Number
+                        Phone Number (Pakistan)
                       </label>
                       <input
                         type="tel"
@@ -621,11 +846,12 @@ export default function AccountPage() {
                         className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all ${
                           errors.phoneNumber ? 'border-red-300' : 'border-gray-300'
                         }`}
-                        placeholder="+91 1234567890"
+                        placeholder="+92 3XX XXXXXXX"
                       />
                       {errors.phoneNumber && (
                         <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
                       )}
+                      <p className="text-xs text-gray-500 mt-1">Format: +92 followed by 10 digits</p>
                     </div>
 
                     {/* Date of Birth */}
@@ -672,7 +898,7 @@ export default function AccountPage() {
                   <div className="pt-6 border-t border-gray-200">
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <MapPin size={20} />
-                      Shipping Address
+                      Shipping Address (Pakistan)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="md:col-span-2">
@@ -685,7 +911,7 @@ export default function AccountPage() {
                           value={formData.address.street}
                           onChange={handleProfileChange}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-                          placeholder="123 Main Street"
+                          placeholder="House #123, Street #456, Area Name"
                         />
                       </div>
 
@@ -693,41 +919,47 @@ export default function AccountPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           City
                         </label>
-                        <input
-                          type="text"
+                        <select
                           name="address.city"
                           value={formData.address.city}
                           onChange={handleProfileChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-                          placeholder="Mumbai"
-                        />
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all bg-white"
+                        >
+                          <option value="">Select a city</option>
+                          {PAKISTANI_CITIES.map(city => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          State
+                          Province
                         </label>
-                        <input
-                          type="text"
-                          name="address.state"
-                          value={formData.address.state}
+                        <select
+                          name="address.province"
+                          value={formData.address.province}
                           onChange={handleProfileChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-                          placeholder="Maharashtra"
-                        />
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all bg-white"
+                        >
+                          <option value="">Select a province</option>
+                          {PAKISTANI_PROVINCES.map(province => (
+                            <option key={province} value={province}>{province}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          ZIP Code
+                          Postal Code
                         </label>
                         <input
                           type="text"
-                          name="address.zipCode"
-                          value={formData.address.zipCode}
+                          name="address.postalCode"
+                          value={formData.address.postalCode}
                           onChange={handleProfileChange}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all"
-                          placeholder="400001"
+                          placeholder="54000"
                         />
                       </div>
 
@@ -735,18 +967,10 @@ export default function AccountPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Country
                         </label>
-                        <select
-                          name="address.country"
-                          value={formData.address.country}
-                          onChange={handleProfileChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 transition-all bg-white"
-                        >
-                          <option value="India">India</option>
-                          <option value="USA">United States</option>
-                          <option value="UK">United Kingdom</option>
-                          <option value="Canada">Canada</option>
-                          <option value="Australia">Australia</option>
-                        </select>
+                        <div className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700">
+                          Pakistan
+                        </div>
+                        <input type="hidden" name="address.country" value="Pakistan" />
                       </div>
                     </div>
                   </div>
@@ -930,52 +1154,112 @@ export default function AccountPage() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">My Orders</h2>
                   <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                    Recent Orders
+                    {orders.length} Orders
                   </span>
                 </div>
 
-                {recentOrders.length > 0 ? (
+                {orders.length > 0 ? (
                   <div className="space-y-4">
-                    {recentOrders.map((order) => (
-                      <div key={order.id} className="p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between mb-3">
+                    {orders.map((order) => (
+                      <div key={order.id} className="p-6 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
                           <div>
-                            <h4 className="font-bold text-gray-900">Order #{order.orderNumber}</h4>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-bold text-gray-900 text-lg">Order #{order.id.substring(0, 8).toUpperCase()}</h4>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                order.paymentStatus === 'paid' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {order.paymentStatus === 'paid' ? 'Paid' : 'Pending Payment'}
+                              </span>
+                            </div>
                             <p className="text-sm text-gray-600">
-                              {formatDate(order.createdAt)} • ${order.totalAmount?.toFixed(2) || '0.00'}
+                              Placed on {formatDate(order.createdAt)} • {order.items.length} items
                             </p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                            order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status?.charAt(0).toUpperCase() + order.status?.slice(1) || 'Pending'}
-                          </span>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-gray-900">
+                              {formatPKR(order.totalAmount)}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              via {order.paymentMethod === 'easypaisa' ? 'Easypaisa' : 'Credit Card'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          {order.items?.slice(0, 3).map((item: any, index: number) => (
-                            <div key={index} className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden">
-                              {item.image && (
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                        
+                        {/* Order Items Preview */}
+                        <div className="mb-4">
+                          <div className="flex items-center gap-3 overflow-x-auto pb-2">
+                            {order.items.slice(0, 5).map((item, index) => (
+                              <div key={index} className="flex-shrink-0">
+                                <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden relative">
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {index === 4 && order.items.length > 5 && (
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                      <span className="text-white text-sm font-medium">
+                                        +{order.items.length - 5}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Order Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Shipping Address</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {order.shippingAddress?.street}, {order.shippingAddress?.city}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Delivery Status</p>
+                            <div className="flex items-center gap-2">
+                              {order.status === 'delivered' ? (
+                                <CheckCircle size={16} className="text-green-500" />
+                              ) : order.status === 'shipped' ? (
+                                <Truck size={16} className="text-blue-500" />
+                              ) : (
+                                <Clock size={16} className="text-yellow-500" />
                               )}
+                              <p className="text-sm font-medium text-gray-900 capitalize">
+                                {order.status}
+                              </p>
                             </div>
-                          ))}
-                          {order.items?.length > 3 && (
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
-                              <span className="text-xs text-gray-600">+{order.items.length - 3}</span>
-                            </div>
-                          )}
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <p className="text-sm text-gray-600 mb-1">Contact</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {order.shippingAddress?.phone || 'N/A'}
+                            </p>
+                          </div>
                         </div>
-                        <div className="mt-3 flex justify-between items-center">
-                          <span className="text-sm text-gray-600">{order.items?.length || 0} items</span>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                           <button
                             onClick={() => router.push(`/orders/${order.id}`)}
-                            className="text-rose-600 hover:text-rose-700 font-medium text-sm"
+                            className="text-rose-600 hover:text-rose-700 font-medium text-sm flex items-center gap-2"
                           >
-                            View Details →
+                            <ShoppingBag size={16} />
+                            View Order Details
                           </button>
+                          {order.status === 'delivered' && (
+                            <button className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors text-sm font-medium">
+                              Rate & Review
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -995,15 +1279,95 @@ export default function AccountPage() {
                     </button>
                   </div>
                 )}
+              </motion.div>
+            )}
 
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                  <button
-                    onClick={() => router.push('/orders')}
-                    className="w-full px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    View All Orders
-                  </button>
+            {/* Wishlist Tab */}
+            {activeTab === 'wishlist' && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="bg-white rounded-2xl shadow-sm border p-6"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">My Wishlist</h2>
+                  <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
+                    {wishlist.length} Items
+                  </span>
                 </div>
+
+                {isLoadingWishlist ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-600">Loading your wishlist...</p>
+                  </div>
+                ) : wishlist.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {wishlist.map((item) => (
+                      <div key={item.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+                        <div className="relative">
+                          <div className="aspect-square overflow-hidden bg-gray-100">
+                            <img
+                              src={item.product.images[0] || '/placeholder.jpg'}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                          {item.product.isNewArrival && (
+                            <span className="absolute top-2 left-2 px-2 py-1 bg-rose-600 text-white text-xs rounded-full">
+                              New
+                            </span>
+                          )}
+                          <button
+                            onClick={() => removeFromWishlist(item.id)}
+                            className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
+                            title="Remove from wishlist"
+                          >
+                            <Heart size={16} className="text-rose-600 fill-rose-600" />
+                          </button>
+                        </div>
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-bold text-gray-900 truncate">{item.product.name}</h3>
+                            <span className="text-rose-600 font-bold">{formatPKR(item.product.price)}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">
+                            Added on {formatDate(item.addedAt)}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => moveToCart(item.product.id)}
+                              className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                            >
+                              <ShoppingBag size={16} />
+                              Add to Cart
+                            </button>
+                            <button
+                              onClick={() => router.push(`/products/${item.product.id}`)}
+                              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            >
+                              View
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 mx-auto mb-4 bg-pink-100 rounded-full flex items-center justify-center">
+                      <Heart size={40} className="text-pink-600" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Your wishlist is empty</h3>
+                    <p className="text-gray-600 mb-6">Save your favorite items to purchase later</p>
+                    <button
+                      onClick={() => router.push('/products')}
+                      className="px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 transition-all font-medium shadow-lg"
+                    >
+                      Browse Products
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -1073,8 +1437,8 @@ export default function AccountPage() {
                           <Phone className="text-green-600" size={20} />
                         </div>
                         <div>
-                          <h4 className="font-medium text-gray-900">SMS Notifications</h4>
-                          <p className="text-sm text-gray-600">Order updates and delivery alerts</p>
+                          <h4 className="font-medium text-gray-900">SMS Notifications (Pakistan)</h4>
+                          <p className="text-sm text-gray-600">Order updates and delivery alerts via SMS</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -1103,36 +1467,6 @@ export default function AccountPage() {
                     </div>
                   </div>
                 </form>
-              </motion.div>
-            )}
-
-            {/* Wishlist Tab */}
-            {activeTab === 'wishlist' && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-white rounded-2xl shadow-sm border p-6"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">My Wishlist</h2>
-                  <span className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
-                    Saved Items
-                  </span>
-                </div>
-
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-pink-100 rounded-full flex items-center justify-center">
-                    <Heart size={40} className="text-pink-600" />
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Your wishlist is empty</h3>
-                  <p className="text-gray-600 mb-6">Save your favorite items to purchase later</p>
-                  <button
-                    onClick={() => router.push('/products')}
-                    className="px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 transition-all font-medium shadow-lg"
-                  >
-                    Browse Products
-                  </button>
-                </div>
               </motion.div>
             )}
           </div>
