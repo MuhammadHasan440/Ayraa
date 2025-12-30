@@ -11,13 +11,15 @@ import {
   Smartphone,
   ArrowLeft,
   CheckCircle,
-  Phone
+  Phone,
+  Mail
 } from 'lucide-react';
 import { useCart } from '@/lib/context/CartContext';
 import { useAuth } from '@/lib/context/AuthContext';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import toast, { Toaster } from 'react-hot-toast';
+import { sendOrderConfirmationEmail } from '@/lib/utils/email';
 
 // PKR currency formatter
 const formatPKR = (amount: number): string => {
@@ -47,6 +49,7 @@ export default function CheckoutPage() {
   const { state, dispatch } = useCart();
   const { user, userData } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     firstName: '',
@@ -63,8 +66,7 @@ export default function CheckoutPage() {
   const [easypaisaNumber, setEasypaisaNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  
-   
+
 
   useEffect(() => {
     if (user && userData) {
@@ -103,6 +105,37 @@ export default function CheckoutPage() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+const sendOrderConfirmation = async (orderId: string, orderDetails: any) => {
+  if (!user?.email) {
+    console.warn('No user email available for sending confirmation');
+    return { success: false, message: 'No user email available' };
+  }
+
+  console.log('Starting email confirmation for order:', orderId);
+  console.log('User email:', user.email);
+  
+  setEmailSending(true);
+  try {
+    const emailResult = await sendOrderConfirmationEmail(user.email, orderDetails);
+    
+    console.log('Email result:', emailResult);
+    
+    if (!emailResult.success) {
+      console.warn('Email sending failed:', emailResult.message, emailResult.error);
+      // Still show success to user but log the email failure
+      return { success: false, message: emailResult.message, error: emailResult.error };
+    }
+    
+    console.log('Order confirmation email sent successfully');
+    return { success: true, message: emailResult.message };
+  } catch (error) {
+    console.error('Error in email sending process:', error);
+    return { success: false, message: 'Failed to send email', error };
+  } finally {
+    setEmailSending(false);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,8 +183,41 @@ export default function CheckoutPage() {
       };
 
       const orderRef = await addDoc(collection(db, 'orders'), orderData);
+      const orderId = orderRef.id;
 
-      // Show success toast
+      // Prepare email order details
+      const emailOrderDetails = {
+        orderId,
+        userName: `${formData.firstName} ${formData.lastName}`,
+        items: state.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          size: item.size,
+          color: item.color,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+        })),
+        subtotal,
+        shippingCost,
+        taxAmount,
+        totalAmount,
+        shippingAddress: {
+          street: formData.address,
+          city: formData.city,
+          province: formData.province,
+          country: formData.country,
+          postalCode: formData.postalCode,
+          phone: formData.phone,
+        },
+        paymentMethod,
+        paymentDetails: paymentMethod === 'easypaisa' ? { easypaisaNumber } : {},
+      };
+
+      // Send confirmation email (non-blocking)
+      const emailPromise = sendOrderConfirmation(orderId, emailOrderDetails);
+
+      // Show success toast immediately
       toast.success(
         (t) => (
           <div className="flex items-center gap-3">
@@ -159,23 +225,41 @@ export default function CheckoutPage() {
             <div>
               <p className="font-semibold">Order Placed Successfully!</p>
               <p className="text-sm text-gray-600 mt-1">
-                Order ID: {orderRef.id}
+                Order ID: {orderId}
               </p>
-              <button
-                onClick={() => {
-                  dispatch({ type: 'CLEAR_CART' });
-                  toast.dismiss(t.id);
-                  router.push('/products');
-                }}
-                className="mt-2 px-4 py-1.5 bg-rose-600 text-white text-sm rounded-lg hover:bg-rose-700 transition-colors"
-              >
-                Continue Shopping
-              </button>
+              <div className="flex items-center gap-2 mt-1">
+                <Mail size={14} className="text-rose-600" />
+                <span className="text-xs text-gray-500">
+                  Confirmation email sent to {user.email}
+                </span>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={() => {
+                    dispatch({ type: 'CLEAR_CART' });
+                    toast.dismiss(t.id);
+                    router.push('/products');
+                  }}
+                  className="flex-1 px-4 py-1.5 bg-rose-600 text-white text-sm rounded-lg hover:bg-rose-700 transition-colors"
+                >
+                  Continue Shopping
+                </button>
+                <button
+                  onClick={() => {
+                    dispatch({ type: 'CLEAR_CART' });
+                    toast.dismiss(t.id);
+                    router.push('/orders');
+                  }}
+                  className="flex-1 px-4 py-1.5 border border-gray-300 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  View Orders
+                </button>
+              </div>
             </div>
           </div>
         ),
         {
-          duration: 8000,
+          duration: 10000,
           position: 'top-center',
           style: {
             background: '#fff',
@@ -188,19 +272,75 @@ export default function CheckoutPage() {
         }
       );
 
-      // Clear cart after toast appears
+      // Check email result and show additional notification if needed
+      emailPromise.then(emailResult => {
+        if (!emailResult.success) {
+          // Show a subtle notification that email failed (but order was still placed)
+          toast(
+            (t) => (
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+                  <span className="text-yellow-600 text-sm">!</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Order placed, but email notification failed</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Your order #{orderId} was placed successfully. You can view it in your orders.
+                  </p>
+                  <button
+                    onClick={() => toast.dismiss(t.id)}
+                    className="mt-2 text-xs text-rose-600 hover:text-rose-700"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            ),
+            {
+              duration: 8000,
+              position: 'bottom-right',
+              icon: null,
+            }
+          );
+        }
+      });
+
+      // Clear cart
       dispatch({ type: 'CLEAR_CART' });
 
-      // Auto-redirect after 8 seconds
+      // Auto-redirect after 10 seconds
       setTimeout(() => {
         router.push('/products');
-      }, 3000);
+      }, 10000);
 
     } catch (error) {
       console.error('Error placing order:', error);
-      toast.error('There was an error processing your order. Please try again.', {
-        position: 'top-center',
-      });
+      toast.error(
+        (t) => (
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+              <span className="text-red-600 text-sm">!</span>
+            </div>
+            <div>
+              <p className="font-medium">Order Processing Failed</p>
+              <p className="text-sm text-gray-600 mt-1">
+                There was an error processing your order. Please try again.
+              </p>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="mt-2 text-sm text-rose-600 hover:text-rose-700"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          duration: 8000,
+          position: 'top-center',
+          icon: null,
+        }
+      );
     } finally {
       setLoading(false);
     }
@@ -297,15 +437,21 @@ export default function CheckoutPage() {
                     <label className="block text-sm font-medium mb-2">
                       Email Address *
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                      required
-                      placeholder="customer@example.com"
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 pl-10"
+                        required
+                        placeholder="customer@example.com"
+                      />
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Order confirmation will be sent to this email
+                    </p>
                   </div>
                   
                   <div className="md:col-span-2">
@@ -551,13 +697,13 @@ export default function CheckoutPage() {
                 
                 <button
                   type="submit"
-                  disabled={loading || state.items.length === 0}
-                  className="px-8 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={loading || emailSending || state.items.length === 0}
+                  className="px-8 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-w-[160px]"
                 >
-                  {loading ? (
+                  {loading || emailSending ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
+                      {loading ? 'Processing...' : 'Sending Email...'}
                     </>
                   ) : (
                     <>
@@ -566,6 +712,23 @@ export default function CheckoutPage() {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Email Note */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <Mail className="text-blue-600 mt-0.5" size={18} />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800">
+                      Order Confirmation Email
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      After placing your order, a confirmation email with all order details will be sent to{' '}
+                      <span className="font-medium">{formData.email || 'your email address'}</span>.
+                      Please check your inbox (and spam folder) for the confirmation.
+                    </p>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
@@ -646,6 +809,17 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               )}
+              
+              {/* Email Notification */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Mail size={16} className="text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">Email Receipt</span>
+                </div>
+                <p className="text-xs text-blue-700 mt-1">
+                  A detailed receipt with all order items and totals will be emailed to you.
+                </p>
+              </div>
               
               {/* Security Badges */}
               <div className="mt-6 pt-6 border-t">
