@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
     // app/api/send-email/route.ts - TEMPORARY FIX
 // Replace the variable loading section with:
 
-const emailUser = process.env.EMAIL_USER || "hassan.mattrics@gmail.com";
-const emailPass = process.env.EMAIL_PASSWORD || "mboxcclsestppfro";
+const emailUser = process.env.EMAIL_USER ;
+const emailPass = process.env.EMAIL_PASSWORD;
 
 console.log('Using email user:', emailUser);
 console.log('Using email pass:', emailPass ? 'SET' : 'NOT SET');
