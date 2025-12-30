@@ -7,7 +7,10 @@ import {
   Users, 
   User, 
   Mail, 
-  Phone, 
+  Phone,
+  TrendingUp,
+  ShoppingBag, 
+  Package,
   Calendar,
   Shield,
   Search,
@@ -22,6 +25,7 @@ import {
   Lock,
   Globe,
   Check,
+  BarChart3,
   X,
   Loader2
 } from 'lucide-react';
@@ -402,24 +406,20 @@ export default function AdminUsersPage() {
         <div className="p-6">
           <h1 className="text-2xl font-bold text-rose-700">AYRAA Admin</h1>
         </div>
-        <nav className="p-4 space-y-1">
+         <nav className="p-4 mt-5 space-y-1">
           {[
-            { name: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
-            { name: 'Products', href: '/admin/products', icon: '👚' },
-            { name: 'Orders', href: '/admin/orders', icon: '📦' },
-            { name: 'Users', href: '/admin/users', icon: '👥', active: true },
-            { name: 'Analytics', href: '/admin/analytics', icon: '📈' },
+            { name: 'Dashboard', href: '/admin/dashboard', icon: <TrendingUp size={20} /> },
+            { name: 'Products', href: '/admin/products', icon: <Package size={20} /> },
+            { name: 'Orders', href: '/admin/orders', icon: <ShoppingBag size={20} /> },
+            { name: 'Users', href: '/admin/users', icon: <Users size={20} /> },
+            { name: 'Analytics', href: '/admin/analytics', icon: <BarChart3 size={20} /> },
           ].map((item) => (
             <a
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                item.active
-                  ? 'bg-rose-50 text-rose-700'
-                  : 'hover:bg-gray-50 text-gray-700'
-              }`}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-rose-50 hover:text-rose-700 transition-colors text-gray-700"
             >
-              <span>{item.icon}</span>
+              {item.icon}
               <span className="font-medium">{item.name}</span>
             </a>
           ))}
