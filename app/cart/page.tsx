@@ -74,7 +74,7 @@ export default function CartPage() {
   };
 
   const calculateSubtotal = () => state.total;
-  const calculateShipping = () => state.total > FREE_SHIPPING_THRESHOLD ? 0 : 500; // PKR 500 shipping
+  const calculateShipping = () => state.total > FREE_SHIPPING_THRESHOLD ? 0 : 200; // PKR 200 shipping
   const calculateTax = () => state.total * 0.13; // 13% tax for Pakistan
   const calculateTotal = () => calculateSubtotal() + calculateShipping() + calculateTax();
 
