@@ -1,3 +1,12 @@
+console.log('LOCAL ENV CHECK', {
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'SET' : 'NOT SET',
+});
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+
+
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';

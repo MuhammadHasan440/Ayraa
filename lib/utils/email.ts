@@ -34,8 +34,11 @@ export async function sendOrderConfirmationEmail(
   
   try {
     // Get the base URL for API calls
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   (typeof window !== 'undefined' ? window.location.origin : '');
+    const baseUrl =
+  typeof window !== 'undefined'
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL!;
+
     
     console.log('Base URL:', baseUrl);
     

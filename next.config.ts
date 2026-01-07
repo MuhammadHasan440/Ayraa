@@ -1,7 +1,12 @@
-import type { NextConfig } from "next";
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Ensure nothing blocks env variables
 
-const nextConfig: NextConfig = {
-  /* config options here */
+  env: {
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASSWORD: process.env.EMAIL_PASSWORD,
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

@@ -248,7 +248,7 @@ const sendOrderConfirmation = async (orderId: string, orderDetails: any) => {
                   onClick={() => {
                     dispatch({ type: 'CLEAR_CART' });
                     toast.dismiss(t.id);
-                    router.push('/orders');
+                    router.push('/account');
                   }}
                   className="flex-1 px-4 py-1.5 border border-gray-300 text-sm rounded-lg hover:bg-gray-50 transition-colors"
                 >
