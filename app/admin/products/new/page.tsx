@@ -14,14 +14,27 @@ import {
   EyeOff,
   Sparkles,
   Watch,
-  SprayCan,
   Shirt,
-  Footprints,
+  GlassWater,
   Gem,
-  Headphones,
+  Crown,
+  Package,
   Tag,
   TrendingUp,
   Clock,
+  Shield,
+  Key,
+  Globe,
+  Menu,
+  Check,
+  AlertCircle,
+  DollarSign,
+  Users,
+  Settings,
+  LogOut,
+  BarChart3,
+  Home,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { 
@@ -30,91 +43,107 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 
 interface ProductFormData {
   name: string;
   description: string;
   price: number;
   originalPrice?: number;
-  category: string; // Updated to support multiple categories
+  category: string;
   isNewArrival: boolean;
-  isOnSale: boolean; // Added sale status
+  isOnSale: boolean;
+  isFeatured: boolean;
   isPublished: boolean;
   sizes: string[];
   colors: string[];
   stock: number;
   images: string[];
   slug: string;
-  brand?: string; // Added brand field
-  weight?: number; // Added weight in grams
-  materials?: string[]; // Added materials array
+  brand?: string;
+  weight?: number;
+  materials?: string[];
+  rating?: number;
+  reviews?: number;
 }
 
-// Categories configuration with icons and colors
+// Categories configuration matching AdminProductsPage
 const CATEGORIES = [
   { 
     id: 'traditional', 
     label: 'Traditional Wear', 
-    icon: Sparkles,
-    color: 'bg-gradient-to-r from-rose-50 to-pink-50',
-    textColor: 'text-rose-700',
-    borderColor: 'border-rose-200'
+    icon: Shirt,
+    color: 'from-purple-900/20 to-purple-800/20',
+    textColor: 'text-purple-300',
+    borderColor: 'border-purple-700/50',
+    iconColor: 'text-purple-400'
   },
   { 
     id: 'casual', 
     label: 'Casual Wear', 
     icon: Shirt,
-    color: 'bg-gradient-to-r from-blue-50 to-cyan-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200'
+    color: 'from-emerald-900/20 to-emerald-800/20',
+    textColor: 'text-emerald-300',
+    borderColor: 'border-emerald-700/50',
+    iconColor: 'text-emerald-400'
+  },
+  { 
+    id: 'party-wear', 
+    label: 'Party Wear', 
+    icon: Crown,
+    color: 'from-pink-900/20 to-pink-800/20',
+    textColor: 'text-pink-300',
+    borderColor: 'border-pink-700/50',
+    iconColor: 'text-pink-400'
   },
   { 
     id: 'perfumes', 
     label: 'Perfumes', 
-    icon: SprayCan,
-    color: 'bg-gradient-to-r from-violet-50 to-purple-50',
-    textColor: 'text-violet-700',
-    borderColor: 'border-violet-200'
+    icon: GlassWater,
+    color: 'from-amber-900/20 to-amber-800/20',
+    textColor: 'text-amber-300',
+    borderColor: 'border-amber-700/50',
+    iconColor: 'text-amber-400'
   },
   { 
     id: 'watches', 
     label: 'Watches', 
     icon: Watch,
-    color: 'bg-gradient-to-r from-amber-50 to-orange-50',
-    textColor: 'text-amber-700',
-    borderColor: 'border-amber-200'
+    color: 'from-blue-900/20 to-blue-800/20',
+    textColor: 'text-blue-300',
+    borderColor: 'border-blue-700/50',
+    iconColor: 'text-blue-400'
   },
   { 
-    id: 'footwear', 
-    label: 'Footwear', 
-    icon: Footprints,
-    color: 'bg-gradient-to-r from-emerald-50 to-teal-50',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-200'
-  },
-  { 
-    id: 'accessories', 
-    label: 'Accessories', 
+    id: 'shoes', 
+    label: 'Shoes', 
     icon: Gem,
-    color: 'bg-gradient-to-r from-fuchsia-50 to-pink-50',
-    textColor: 'text-fuchsia-700',
-    borderColor: 'border-fuchsia-200'
-  },
-  { 
-    id: 'electronics', 
-    label: 'Electronics', 
-    icon: Headphones,
-    color: 'bg-gradient-to-r from-gray-50 to-slate-50',
-    textColor: 'text-gray-700',
-    borderColor: 'border-gray-200'
+    color: 'from-indigo-900/20 to-indigo-800/20',
+    textColor: 'text-indigo-300',
+    borderColor: 'border-indigo-700/50',
+    iconColor: 'text-indigo-400'
   },
 ];
+
+// PKR currency formatter
+const formatPKR = (amount: number): string => {
+  return new Intl.NumberFormat('en-PK', {
+    style: 'currency',
+    currency: 'PKR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 export default function NewProductPage() {
   const router = useRouter();
   const { user, isAdmin, loading: authLoading } = useAuth();
   
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -122,6 +151,7 @@ export default function NewProductPage() {
     category: 'traditional',
     isNewArrival: false,
     isOnSale: false,
+    isFeatured: false,
     isPublished: true,
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['Black', 'White', 'Red', 'Blue'],
@@ -131,6 +161,8 @@ export default function NewProductPage() {
     brand: '',
     weight: 0,
     materials: [],
+    rating: 0,
+    reviews: 0,
   });
   
   const [newSize, setNewSize] = useState('');
@@ -144,6 +176,15 @@ export default function NewProductPage() {
       router.push('/admin-login');
     }
   }, [user, isAdmin, authLoading, router]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/admin-login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   // Auto-generate slug from product name
   const generateSlug = (text: string) => {
@@ -173,6 +214,12 @@ export default function NewProductPage() {
     }
   }, [formData.category]);
 
+  const securityFeatures = [
+    { text: "Secure Admin", icon: <Shield size={14} className="text-emerald-400" /> },
+    { text: "Real-time Data", icon: <Globe size={14} className="text-blue-400" /> },
+    { text: "SSL Protected", icon: <Key size={14} className="text-amber-400" /> },
+  ];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -181,7 +228,7 @@ export default function NewProductPage() {
         ...prev,
         [name]: (e.target as HTMLInputElement).checked
       }));
-    } else if (name === 'price' || name === 'originalPrice' || name === 'stock' || name === 'weight') {
+    } else if (name === 'price' || name === 'originalPrice' || name === 'stock' || name === 'weight' || name === 'rating' || name === 'reviews') {
       setFormData(prev => ({
         ...prev,
         [name]: parseFloat(value) || 0
@@ -254,7 +301,8 @@ export default function NewProductPage() {
 
       for (const file of selectedFiles) {
         if (file.size > 2 * 1024 * 1024) {
-          alert(`Image ${file.name} is too large. Maximum size is 2MB.`);
+          setErrorMessage(`Image ${file.name} is too large. Maximum size is 2MB.`);
+          setTimeout(() => setErrorMessage(''), 3000);
           continue;
         }
 
@@ -269,12 +317,14 @@ export default function NewProductPage() {
       }));
 
       if (selectedFiles.length > 5) {
-        alert('Only the first 5 images were added. Maximum 5 images per product.');
+        setErrorMessage('Only the first 5 images were added. Maximum 5 images per product.');
+        setTimeout(() => setErrorMessage(''), 3000);
       }
 
     } catch (error) {
       console.error('Error processing images:', error);
-      alert('Failed to process images. Please try again.');
+      setErrorMessage('Failed to process images. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       setLoading(false);
     }
@@ -343,31 +393,28 @@ export default function NewProductPage() {
     
     // Validation
     if (!formData.name || !formData.description || formData.price <= 0) {
-      alert('Please fill in all required fields');
+      setErrorMessage('Please fill in all required fields');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (formData.images.length === 0) {
-      alert('Please upload at least one product image');
+      setErrorMessage('Please upload at least one product image');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (!formData.slug) {
-      alert('Please provide a URL slug for the product');
+      setErrorMessage('Please provide a URL slug for the product');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     // Validate slug format
     const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
     if (!slugRegex.test(formData.slug)) {
-      alert('Slug can only contain lowercase letters, numbers, and hyphens. No spaces or special characters.');
-      return;
-    }
-
-    // Warn about large image data
-    const totalImageSize = formData.images.reduce((total, img) => total + (img.length * 3) / 4, 0);
-    if (totalImageSize > 5000000) {
-      alert('Total image size is too large. Please reduce the number of images or their quality.');
+      setErrorMessage('Slug can only contain lowercase letters, numbers, and hyphens. No spaces or special characters.');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -383,6 +430,7 @@ export default function NewProductPage() {
         category: formData.category,
         isNewArrival: formData.isNewArrival,
         isOnSale: formData.isOnSale,
+        isFeatured: formData.isFeatured,
         isPublished: formData.isPublished,
         sizes: formData.sizes,
         colors: formData.colors,
@@ -392,6 +440,8 @@ export default function NewProductPage() {
         brand: formData.brand || null,
         weight: formData.weight || null,
         materials: formData.materials || [],
+        rating: formData.rating || 0,
+        reviews: formData.reviews || 0,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -403,28 +453,32 @@ export default function NewProductPage() {
       
       console.log('✅ Product created with ID:', docRef.id);
       
-      // Show success message based on publication status
+      // Show success message
       const statusMessage = formData.isPublished 
         ? 'Product is now live in the store!' 
         : 'Product saved as draft (not visible in store).';
       
-      alert(`✅ Product created successfully!\n\n${statusMessage}\n\nProduct URL: /products/${formData.slug}`);
+      setSuccessMessage(`✅ Product created successfully!\n${statusMessage}`);
+      setTimeout(() => setSuccessMessage(''), 5000);
       
       // Redirect to products page
-      router.push('/admin/products');
+      setTimeout(() => {
+        router.push('/admin/products');
+      }, 1500);
       
     } catch (error: any) {
       console.error('❌ Error creating product:', error);
       
       if (error.code === 'resource-exhausted') {
-        alert('Firestore quota exceeded. Please try again later or reduce image sizes.');
+        setErrorMessage('Firestore quota exceeded. Please try again later or reduce image sizes.');
       } else if (error.code === 'permission-denied') {
-        alert('Permission denied. Please check Firestore rules.');
+        setErrorMessage('Permission denied. Please check Firestore rules.');
       } else if (error.message?.includes('payload')) {
-        alert('Product data is too large. Please reduce image sizes or number of images.');
+        setErrorMessage('Product data is too large. Please reduce image sizes or number of images.');
       } else {
-        alert(`Failed to create product: ${error.message || 'Unknown error'}`);
+        setErrorMessage(`Failed to create product: ${error.message || 'Unknown error'}`);
       }
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -432,10 +486,10 @@ export default function NewProductPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading Admin Panel...</p>
+          <div className="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-400">Loading Admin Panel...</p>
         </div>
       </div>
     );
@@ -448,48 +502,124 @@ export default function NewProductPage() {
   const CategoryIcon = selectedCategory.icon;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      {/* Admin Navigation */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => router.push('/admin/products')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
-              >
-                <ArrowLeft size={20} />
-                <span className="font-medium">Back to Products</span>
-              </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950">
+      {/* Mobile Sidebar Toggle */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 bg-gradient-to-r from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700 rounded-lg text-slate-300 hover:text-amber-400 transition-colors"
+        >
+          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`fixed left-0 top-20 bottom-0 w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-800 shadow-xl z-40 transition-transform ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+       
+
+        {/* Navigation */}
+        <nav className="p-4 space-y-1 mt-3 pt-10">
+          {[
+            { name: 'Dashboard', href: '/admin/dashboard', icon: <TrendingUp size={20} /> },
+            { name: 'Products', href: '/admin/products', icon: <Package size={20} />, active: true },
+            { name: 'Orders', href: '/admin/orders', icon: <ShoppingBag size={20} /> },
+            { name: 'Users', href: '/admin/users', icon: <Users size={20} /> },
+            { name: 'Analytics', href: '/admin/analytics', icon: <BarChart3 size={20} /> },
+            
+          ].map((item) => (
+            <a
+              key={item.name}
+              href={item.href}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                item.active
+                  ? 'bg-gradient-to-r from-amber-600/20 to-amber-500/20 text-amber-300 border border-amber-500/30'
+                  : 'hover:bg-slate-800/50 text-slate-300 hover:text-white'
+              }`}
+            >
+              {item.icon}
+              <span className="font-medium">{item.name}</span>
+            </a>
+          ))}
+        </nav>
+
+        {/* Security Features */}
+        <div className="mt-8 p-4 border-t border-slate-800">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            {securityFeatures.map((feature, index) => (
+              <div key={index} className="flex items-center gap-1 text-xs text-slate-400">
+                {feature.icon}
+                <span>{feature.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Admin Info */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800 bg-gradient-to-t from-slate-900 to-slate-950">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-gradient-to-r from-amber-600/20 to-amber-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
+              <span className="font-bold text-amber-400">
+                {user?.email?.charAt(0).toUpperCase()}
+              </span>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-medium">{user?.email}</div>
-                <div className="text-xs text-gray-500">Admin</div>
+            <div className="flex-1">
+              <p className="font-medium text-sm text-white truncate">{user?.email}</p>
+              <p className="text-xs text-slate-500">Administrator</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+              title="Sign Out"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="lg:ml-64 p-4 md:p-6">
+        {/* Messages */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 rounded-2xl border border-emerald-700/50 flex items-center gap-3">
+            <Check className="text-emerald-400" size={20} />
+            <span className="text-emerald-300 font-medium">{successMessage}</span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-red-900/20 to-red-800/20 rounded-2xl border border-red-700/50 flex items-center gap-3">
+            <AlertCircle className="text-red-400" size={20} />
+            <span className="text-red-300 font-medium">{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-gradient-to-r from-amber-600/20 to-amber-500/20 p-2 rounded-lg border border-amber-500/30">
+                <Plus className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Create New Product</h1>
+                <p className="text-slate-400">Add a new product to your store with all the details</p>
               </div>
             </div>
           </div>
+          <button
+            onClick={() => router.push('/admin/products')}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-slate-700 rounded-xl hover:border-amber-500/30 transition-all text-slate-300 hover:text-white"
+          >
+            <ArrowLeft size={20} />
+            Back to Products
+          </button>
         </div>
-      </div>
-
-      <div className="container mx-auto px-6 py-8">
-        {/* Page Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-700 to-pink-600 bg-clip-text text-transparent">
-            Create New Product
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Add a new product to your store with all the details
-          </p>
-        </motion.div>
 
         <form onSubmit={handleSubmit} className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Basic Info */}
             <div className="lg:col-span-2 space-y-6">
               {/* Basic Information Card */}
@@ -497,18 +627,18 @@ export default function NewProductPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-2xl shadow-lg border p-6"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-5 md:p-6 backdrop-blur-sm"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-800">Product Details</h2>
-                  <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${selectedCategory.color} ${selectedCategory.textColor}`}>
+                  <h2 className="text-xl font-bold text-white">Product Details</h2>
+                  <div className={`px-3 py-1.5 rounded-full text-sm font-medium border bg-gradient-to-r ${selectedCategory.color} ${selectedCategory.textColor} ${selectedCategory.borderColor}`}>
                     {selectedCategory.label}
                   </div>
                 </div>
                 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       Product Name *
                     </label>
                     <input
@@ -516,14 +646,14 @@ export default function NewProductPage() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
                       required
                       placeholder="Enter product name"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       Description *
                     </label>
                     <textarea
@@ -531,7 +661,7 @@ export default function NewProductPage() {
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={5}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
                       required
                       placeholder="Describe your product in detail..."
                     />
@@ -539,10 +669,10 @@ export default function NewProductPage() {
                   
                   {/* Categories Selection */}
                   <div>
-                    <label className="block text-sm font-medium mb-3 text-gray-700">
+                    <label className="block text-sm font-medium mb-3 text-slate-300">
                       Category *
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {CATEGORIES.map((category) => {
                         const Icon = category.icon;
                         const isActive = formData.category === category.id;
@@ -553,11 +683,11 @@ export default function NewProductPage() {
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, category: category.id }))}
                             className={`p-4 rounded-xl border-2 transition-all duration-300 ${isActive 
-                              ? `${category.color} ${category.textColor} ${category.borderColor} scale-105 shadow-md` 
-                              : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}
+                              ? `bg-gradient-to-r ${category.color} ${category.textColor} ${category.borderColor} scale-105 shadow-lg` 
+                              : 'bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700 hover:border-amber-500/30 hover:shadow-sm text-slate-400 hover:text-white'}`}
                           >
                             <div className="flex flex-col items-center gap-2">
-                              <Icon size={24} />
+                              <Icon size={24} className={isActive ? category.iconColor : 'text-slate-500'} />
                               <span className="text-sm font-medium">{category.label}</span>
                             </div>
                           </button>
@@ -568,15 +698,15 @@ export default function NewProductPage() {
                   
                   {/* URL Slug */}
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       URL Slug *
-                      <span className="ml-2 text-xs font-normal text-gray-500">
+                      <span className="ml-2 text-xs font-normal text-slate-500">
                         (SEO-friendly URL identifier)
                       </span>
                     </label>
                     <div className="flex gap-3">
                       <div className="relative flex-1">
-                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500">
                           /products/
                         </div>
                         <input
@@ -584,7 +714,7 @@ export default function NewProductPage() {
                           name="slug"
                           value={formData.slug}
                           onChange={handleInputChange}
-                          className="w-full pl-28 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all font-mono"
+                          className="w-full pl-28 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white font-mono transition-all"
                           required
                           placeholder="product-url-name"
                         />
@@ -598,21 +728,21 @@ export default function NewProductPage() {
                             slug: generateSlug(prev.name)
                           }));
                         }}
-                        className="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 text-sm font-medium whitespace-nowrap transition-colors"
+                        className="px-4 py-3 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-slate-700 rounded-xl hover:border-amber-500/30 text-slate-300 hover:text-white whitespace-nowrap transition-all"
                         title="Generate from product name"
                       >
                         Auto Generate
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Product URL: <span className="font-mono text-rose-600">https://yourapp.com/products/{formData.slug || 'product-name'}</span>
+                    <p className="text-xs text-slate-500 mt-2">
+                      Product URL: <span className="font-mono text-amber-400">https://ayraa.com/products/{formData.slug || 'product-name'}</span>
                     </p>
                   </div>
                   
                   {/* Brand and Additional Info */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700">
+                      <label className="block text-sm font-medium mb-2 text-slate-300">
                         Brand (Optional)
                       </label>
                       <input
@@ -620,12 +750,12 @@ export default function NewProductPage() {
                         name="brand"
                         value={formData.brand}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
                         placeholder="e.g., Nike, Rolex, Chanel"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700">
+                      <label className="block text-sm font-medium mb-2 text-slate-300">
                         Weight (grams, Optional)
                       </label>
                       <input
@@ -635,7 +765,7 @@ export default function NewProductPage() {
                         onChange={handleInputChange}
                         min="0"
                         step="1"
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
                         placeholder="e.g., 500"
                       />
                     </div>
@@ -648,12 +778,12 @@ export default function NewProductPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-lg border p-6"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-5 md:p-6 backdrop-blur-sm"
               >
-                <h2 className="text-xl font-bold text-gray-800 mb-6">
+                <h2 className="text-xl font-bold text-white mb-6">
                   Product Images *
                   {formData.images.length > 0 && (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
+                    <span className="ml-2 text-sm font-normal text-slate-400">
                       ({formData.images.length}/5 images)
                     </span>
                   )}
@@ -661,7 +791,7 @@ export default function NewProductPage() {
                 
                 <div className="space-y-6">
                   {/* Upload Area */}
-                  <div className={`border-3 border-dashed ${formData.images.length === 0 ? 'border-rose-200 bg-rose-50' : 'border-gray-200'} rounded-2xl p-8 text-center transition-all`}>
+                  <div className={`border-3 border-dashed ${formData.images.length === 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-slate-700'} rounded-2xl p-8 text-center transition-all`}>
                     <input
                       type="file"
                       id="imageUpload"
@@ -674,20 +804,20 @@ export default function NewProductPage() {
                     <label htmlFor="imageUpload" className="cursor-pointer block">
                       <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${loading ? 'animate-pulse' : ''}`}>
                         {loading ? (
-                          <div className="w-10 h-10 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                          <div className="w-20 h-20 bg-gradient-to-r from-rose-100 to-pink-100 rounded-full flex items-center justify-center">
-                            <Upload className="text-rose-500" size={32} />
+                          <div className="w-20 h-20 bg-gradient-to-r from-amber-600/20 to-amber-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
+                            <Upload className="text-amber-400" size={32} />
                           </div>
                         )}
                       </div>
-                      <p className="text-lg font-medium mb-1">
+                      <p className="text-lg font-medium mb-1 text-white">
                         {loading ? 'Uploading images...' : 'Drag & drop or click to upload'}
                       </p>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <p className="text-sm text-slate-400 mb-4">
                         Upload up to 5 images • Max 2MB each • JPG, PNG, WebP
                       </p>
-                      <div className="inline-flex items-center gap-2 px-6 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium">
+                      <div className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-xl hover:from-amber-700 hover:to-amber-600 transition-all shadow-lg font-medium">
                         <Upload size={18} />
                         Browse Files
                       </div>
@@ -697,11 +827,11 @@ export default function NewProductPage() {
                   {/* Preview Grid */}
                   {formData.images.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-medium text-gray-700 mb-3">Image Preview</h3>
+                      <h3 className="text-sm font-medium text-slate-300 mb-3">Image Preview</h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         {formData.images.map((image, index) => (
                           <div key={index} className="relative group">
-                            <div className="aspect-square rounded-xl overflow-hidden bg-gray-100 shadow-sm">
+                            <div className="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 shadow-sm">
                               <img
                                 src={image}
                                 alt={`Preview ${index + 1}`}
@@ -711,7 +841,7 @@ export default function NewProductPage() {
                             <button
                               type="button"
                               onClick={() => removeImage(index)}
-                              className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
+                              className="absolute top-2 right-2 w-8 h-8 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
                               title="Remove image"
                             >
                               <X size={16} />
@@ -722,7 +852,7 @@ export default function NewProductPage() {
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-gray-500 mt-3">
+                      <p className="text-xs text-slate-500 mt-3">
                         First image will be used as the main product image
                       </p>
                     </div>
@@ -738,17 +868,17 @@ export default function NewProductPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-white rounded-2xl shadow-lg border p-6"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-5 md:p-6 backdrop-blur-sm"
               >
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Pricing & Status</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Pricing & Status</h2>
                 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       Selling Price (PKR) *
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">₨</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">₨</span>
                       <input
                         type="number"
                         name="price"
@@ -756,19 +886,19 @@ export default function NewProductPage() {
                         onChange={handleInputChange}
                         min="0"
                         step="1"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white transition-all"
                         required
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       Original Price (PKR)
-                      <span className="ml-2 text-xs font-normal text-gray-500">(Optional - for sale display)</span>
+                      <span className="ml-2 text-xs font-normal text-slate-500">(Optional - for sale display)</span>
                     </label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">₨</span>
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400">₨</span>
                       <input
                         type="number"
                         name="originalPrice"
@@ -776,20 +906,54 @@ export default function NewProductPage() {
                         onChange={handleInputChange}
                         min="0"
                         step="1"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500 transition-all"
                         placeholder="Leave empty if not on sale"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Rating & Reviews */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">
+                        Rating (0-5)
+                      </label>
+                      <input
+                        type="number"
+                        name="rating"
+                        value={formData.rating || ''}
+                        onChange={handleInputChange}
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white transition-all"
+                        placeholder="0-5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">
+                        Reviews Count
+                      </label>
+                      <input
+                        type="number"
+                        name="reviews"
+                        value={formData.reviews || ''}
+                        onChange={handleInputChange}
+                        min="0"
+                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white transition-all"
+                        placeholder="0"
                       />
                     </div>
                   </div>
                   
                   {/* Status Toggles */}
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/30 to-slate-900/30 rounded-xl border border-slate-700">
                       <div className="flex items-center gap-3">
-                        <Clock className="text-rose-500" size={20} />
+                        <Clock className="text-amber-400" size={20} />
                         <div>
-                          <div className="font-medium">New Arrival</div>
-                          <div className="text-xs text-gray-500">Show in new arrivals section</div>
+                          <div className="font-medium text-white">New Arrival</div>
+                          <div className="text-xs text-slate-400">Show in new arrivals section</div>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -800,16 +964,16 @@ export default function NewProductPage() {
                           onChange={handleInputChange}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-rose-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                       </label>
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/30 to-slate-900/30 rounded-xl border border-slate-700">
                       <div className="flex items-center gap-3">
-                        <Tag className="text-green-500" size={20} />
+                        <Tag className="text-emerald-400" size={20} />
                         <div>
-                          <div className="font-medium">On Sale</div>
-                          <div className="text-xs text-gray-500">Show sale badge and discount</div>
+                          <div className="font-medium text-white">On Sale</div>
+                          <div className="text-xs text-slate-400">Show sale badge and discount</div>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -820,20 +984,40 @@ export default function NewProductPage() {
                           onChange={handleInputChange}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/30 to-slate-900/30 rounded-xl border border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <Sparkles className="text-purple-400" size={20} />
+                        <div>
+                          <div className="font-medium text-white">Featured</div>
+                          <div className="text-xs text-slate-400">Show in featured section</div>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="isFeatured"
+                          checked={formData.isFeatured}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
                       </label>
                     </div>
                     
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/30 to-slate-900/30 rounded-xl border border-slate-700">
                       <div className="flex items-center gap-3">
                         {formData.isPublished ? (
-                          <Eye className="text-green-500" size={20} />
+                          <Eye className="text-emerald-400" size={20} />
                         ) : (
-                          <EyeOff className="text-gray-500" size={20} />
+                          <EyeOff className="text-slate-400" size={20} />
                         )}
                         <div>
-                          <div className="font-medium">{formData.isPublished ? 'Published' : 'Draft'}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="font-medium text-white">{formData.isPublished ? 'Published' : 'Draft'}</div>
+                          <div className="text-xs text-slate-400">
                             {formData.isPublished ? 'Visible in store' : 'Hidden from customers'}
                           </div>
                         </div>
@@ -846,7 +1030,7 @@ export default function NewProductPage() {
                           onChange={handleInputChange}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-slate-900 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                       </label>
                     </div>
                   </div>
@@ -858,13 +1042,13 @@ export default function NewProductPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-lg border p-6"
+                className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-5 md:p-6 backdrop-blur-sm"
               >
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Inventory & Variants</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Inventory & Variants</h2>
                 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-700">
+                    <label className="block text-sm font-medium mb-2 text-slate-300">
                       Stock Quantity *
                     </label>
                     <input
@@ -873,14 +1057,14 @@ export default function NewProductPage() {
                       value={formData.stock}
                       onChange={handleInputChange}
                       min="0"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white transition-all"
                       required
                     />
                   </div>
                   
                   {/* Sizes */}
                   <div>
-                    <label className="block text-sm font-medium mb-3 text-gray-700">
+                    <label className="block text-sm font-medium mb-3 text-slate-300">
                       Available Sizes
                     </label>
                     <div className="flex gap-2 mb-3">
@@ -890,12 +1074,12 @@ export default function NewProductPage() {
                         onChange={(e) => setNewSize(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSize())}
                         placeholder="Add size (e.g., XL, 10, One Size)"
-                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500"
                       />
                       <button
                         type="button"
                         onClick={addSize}
-                        className="px-4 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors flex items-center"
+                        className="px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg hover:from-amber-700 hover:to-amber-600 transition-all shadow-lg flex items-center"
                       >
                         <Plus size={18} />
                       </button>
@@ -904,13 +1088,13 @@ export default function NewProductPage() {
                       {formData.sizes.map((size) => (
                         <div
                           key={size}
-                          className="group flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-800/30 to-slate-900/30 hover:from-slate-700/40 hover:to-slate-800/40 rounded-lg border border-slate-700 transition-all"
                         >
-                          <span className="font-medium">{size}</span>
+                          <span className="font-medium text-slate-300">{size}</span>
                           <button
                             type="button"
                             onClick={() => removeSize(size)}
-                            className="text-gray-500 hover:text-red-600 transition-colors"
+                            className="text-slate-400 hover:text-red-400 transition-colors"
                             title="Remove size"
                           >
                             <X size={14} />
@@ -922,7 +1106,7 @@ export default function NewProductPage() {
                   
                   {/* Colors */}
                   <div>
-                    <label className="block text-sm font-medium mb-3 text-gray-700">
+                    <label className="block text-sm font-medium mb-3 text-slate-300">
                       Available Colors
                     </label>
                     <div className="flex gap-2 mb-3">
@@ -932,12 +1116,12 @@ export default function NewProductPage() {
                         onChange={(e) => setNewColor(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
                         placeholder="Add color (e.g., Navy Blue)"
-                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500"
                       />
                       <button
                         type="button"
                         onClick={addColor}
-                        className="px-4 py-2.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors flex items-center"
+                        className="px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg hover:from-amber-700 hover:to-amber-600 transition-all shadow-lg flex items-center"
                       >
                         <Plus size={18} />
                       </button>
@@ -946,17 +1130,17 @@ export default function NewProductPage() {
                       {formData.colors.map((color) => (
                         <div
                           key={color}
-                          className="group flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-800/30 to-slate-900/30 hover:from-slate-700/40 hover:to-slate-800/40 rounded-lg border border-slate-700 transition-all"
                         >
                           <div 
-                            className="w-4 h-4 rounded-full border border-gray-300"
+                            className="w-4 h-4 rounded-full border border-slate-600"
                             style={{ backgroundColor: color.toLowerCase() }}
                           />
-                          <span className="font-medium">{color}</span>
+                          <span className="font-medium text-slate-300">{color}</span>
                           <button
                             type="button"
                             onClick={() => removeColor(color)}
-                            className="text-gray-500 hover:text-red-600 transition-colors"
+                            className="text-slate-400 hover:text-red-400 transition-colors"
                             title="Remove color"
                           >
                             <X size={14} />
@@ -968,7 +1152,7 @@ export default function NewProductPage() {
                   
                   {/* Materials */}
                   <div>
-                    <label className="block text-sm font-medium mb-3 text-gray-700">
+                    <label className="block text-sm font-medium mb-3 text-slate-300">
                       Materials (Optional)
                     </label>
                     <div className="flex gap-2 mb-3">
@@ -978,12 +1162,12 @@ export default function NewProductPage() {
                         onChange={(e) => setNewMaterial(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addMaterial())}
                         placeholder="Add material (e.g., Cotton, Leather)"
-                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500"
                       />
                       <button
                         type="button"
                         onClick={addMaterial}
-                        className="px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center"
+                        className="px-4 py-2.5 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-lg hover:from-slate-600 hover:to-slate-700 transition-all shadow-lg flex items-center"
                       >
                         <Plus size={18} />
                       </button>
@@ -992,13 +1176,13 @@ export default function NewProductPage() {
                       {formData.materials?.map((material) => (
                         <div
                           key={material}
-                          className="group flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          className="group flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-slate-800/30 to-slate-900/30 hover:from-slate-700/40 hover:to-slate-800/40 rounded-lg border border-slate-700 transition-all"
                         >
-                          <span className="font-medium">{material}</span>
+                          <span className="font-medium text-slate-300">{material}</span>
                           <button
                             type="button"
                             onClick={() => removeMaterial(material)}
-                            className="text-gray-500 hover:text-red-600 transition-colors"
+                            className="text-slate-400 hover:text-red-400 transition-colors"
                             title="Remove material"
                           >
                             <X size={14} />
@@ -1017,14 +1201,14 @@ export default function NewProductPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-8 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl shadow-lg border border-rose-100 p-8"
+            className="mt-6 bg-gradient-to-r from-amber-900/20 to-amber-800/20 rounded-2xl border border-amber-700/50 p-6 md:p-8"
           >
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
               <div className="flex-1">
-                <h3 className="font-bold text-xl text-gray-800 mb-2">
+                <h3 className="font-bold text-xl text-white mb-2">
                   {formData.isPublished ? 'Publish Product' : 'Save as Draft'}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-slate-300">
                   {formData.isPublished 
                     ? 'This product will be immediately visible to customers in your store.'
                     : 'This product will be saved but hidden from customers until published.'
@@ -1033,12 +1217,12 @@ export default function NewProductPage() {
               </div>
               
               <div className="text-right">
-                <div className="text-2xl font-bold text-rose-700">
-                  ₨{formData.price.toLocaleString()}
+                <div className="text-2xl font-bold text-amber-400">
+                  {formatPKR(formData.price)}
                 </div>
                 {formData.originalPrice && formData.originalPrice > formData.price && (
-                  <div className="text-sm text-gray-500 line-through">
-                    ₨{formData.originalPrice.toLocaleString()}
+                  <div className="text-sm text-slate-400 line-through">
+                    {formatPKR(formData.originalPrice)}
                   </div>
                 )}
               </div>
@@ -1048,14 +1232,14 @@ export default function NewProductPage() {
               <button
                 type="button"
                 onClick={() => router.push('/admin/products')}
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all font-medium"
+                className="px-8 py-3 bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-slate-700 rounded-xl hover:border-amber-500/30 text-slate-300 hover:text-white transition-all font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-10 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl hover:from-rose-700 hover:to-pink-700 transition-all font-medium flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                className="px-10 py-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-xl hover:from-amber-700 hover:to-amber-600 transition-all font-medium flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
                 {loading ? (
                   <>
@@ -1073,10 +1257,10 @@ export default function NewProductPage() {
             
             {/* Preview Link */}
             {formData.slug && (
-              <div className="mt-6 pt-6 border-t border-rose-200">
-                <p className="text-sm text-gray-600">
+              <div className="mt-6 pt-6 border-t border-amber-700/30">
+                <p className="text-sm text-slate-400">
                   Product Preview URL:{' '}
-                  <span className="font-mono text-rose-600 bg-rose-50 px-2 py-1 rounded">
+                  <span className="font-mono text-amber-400 bg-gradient-to-r from-slate-800/50 to-slate-900/50 px-2 py-1 rounded border border-slate-700">
                     /products/{formData.slug}
                   </span>
                 </p>
@@ -1084,6 +1268,13 @@ export default function NewProductPage() {
             )}
           </motion.div>
         </form>
+      </div>
+
+      {/* Background Decoration */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-slate-800/20 rounded-full blur-3xl"></div>
       </div>
     </div>
   );

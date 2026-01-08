@@ -125,6 +125,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signOutUser,
         signInWithGoogle,
         isAdmin,
+        
       }}
     >
       {children}

@@ -12,8 +12,6 @@ import {
   Grid3x3, 
   List, 
   Sparkles, 
-  TrendingUp, 
-  Clock,
   ChevronDown,
   X,
   Loader2,
@@ -22,10 +20,13 @@ import {
   Shirt,
   ShoppingBag,
   Footprints,
-  Headphones,
-  Heart,
+  Crown,
   Gem,
-  Tag
+  Zap,
+  Search,
+  DollarSign,
+  SortAsc,
+  TrendingUp
 } from 'lucide-react';
 
 // Add this currency formatter function
@@ -54,11 +55,11 @@ function ProductsContent() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
-  // Update price range for PKR (assuming your products are in PKR)
+  // Update price range for PKR
   const [filters, setFilters] = useState({
     category: searchParams.get('category') || 'all',
     sortBy: searchParams.get('sort') || 'newest',
-    priceRange: [0, 50000] as [number, number], // Changed to PKR range
+    priceRange: [0, 50000] as [number, number],
     showNewArrivals: searchParams.get('new') === 'true',
     searchQuery: searchParams.get('search') || '',
   });
@@ -128,7 +129,8 @@ function ProductsContent() {
       const query = filters.searchQuery.toLowerCase();
       result = result.filter(p => 
         p.name.toLowerCase().includes(query) ||
-        p.description.toLowerCase().includes(query)
+        p.description.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query)
       );
     }
 
@@ -145,8 +147,7 @@ function ProductsContent() {
         case 'price-high':
           return b.price - a.price;
         case 'popular':
-          // Add popularity logic here if available
-          return 0;
+          return b.stock - a.stock; // Using stock as popularity proxy
         default: // newest
           return b.createdAt.getTime() - a.createdAt.getTime();
       }
@@ -155,13 +156,15 @@ function ProductsContent() {
     return result;
   }, [products, filters]);
 
-  // Update active filters display with PKR formatting
+  // Update active filters display
   useEffect(() => {
     const active: string[] = [];
-    if (filters.category !== 'all') active.push(filters.category);
+    if (filters.category !== 'all') {
+      const categoryName = categories.find(cat => cat.id === filters.category)?.label;
+      if (categoryName) active.push(categoryName);
+    }
     if (filters.showNewArrivals) active.push('New Arrivals');
     if (filters.searchQuery) active.push(`Search: ${filters.searchQuery}`);
-    // Add price range to active filters
     if (filters.priceRange[0] > 0 || filters.priceRange[1] < 50000) {
       active.push(`${formatPKR(filters.priceRange[0])} - ${formatPKR(filters.priceRange[1])}`);
     }
@@ -200,7 +203,7 @@ function ProductsContent() {
     router.push('/products');
   }, [router]);
 
-  // Handle price range change with debounce
+  // Handle price range change
   const handlePriceRangeChange = useCallback((index: number, value: number) => {
     setFilters(prev => {
       const newRange = [...prev.priceRange] as [number, number];
@@ -209,52 +212,111 @@ function ProductsContent() {
     });
   }, []);
 
-  // Updated categories with perfumes, watches, and more
+  // UPDATED: Only your specific categories
   const categories = [
-    { id: 'all', label: 'All Products', icon: ShoppingBag, color: 'from-blue-50 to-blue-100', textColor: 'text-blue-700' },
-    { id: 'traditional', label: 'Traditional', icon: Sparkles, color: 'from-rose-50 to-pink-50', textColor: 'text-rose-700' },
-    { id: 'casual', label: 'Casual', icon: Shirt, color: 'from-emerald-50 to-teal-50', textColor: 'text-emerald-700' },
-    { id: 'perfumes', label: 'Perfumes', icon: SprayCan, color: 'from-violet-50 to-purple-50', textColor: 'text-violet-700' },
-    { id: 'watches', label: 'Watches', icon: Watch, color: 'from-amber-50 to-orange-50', textColor: 'text-amber-700' },
-    { id: 'footwear', label: 'Footwear', icon: Footprints, color: 'from-cyan-50 to-blue-50', textColor: 'text-cyan-700' },
-    { id: 'accessories', label: 'Accessories', icon: Gem, color: 'from-fuchsia-50 to-pink-50', textColor: 'text-fuchsia-700' },
-    { id: 'electronics', label: 'Electronics', icon: Headphones, color: 'from-gray-50 to-slate-50', textColor: 'text-gray-700' },
-    { id: 'new', label: 'New Arrivals', icon: Clock, color: 'from-red-50 to-rose-50', textColor: 'text-red-700' },
-    { id: 'sale', label: 'On Sale', icon: Tag, color: 'from-green-50 to-emerald-50', textColor: 'text-green-700' },
-    { id: 'trending', label: 'Trending', icon: TrendingUp, color: 'from-indigo-50 to-blue-50', textColor: 'text-indigo-700' },
-    { id: 'wishlist', label: 'Wishlist', icon: Heart, color: 'from-rose-50 to-red-50', textColor: 'text-rose-700' },
+    { 
+      id: 'all', 
+      label: 'All Products', 
+      icon: ShoppingBag, 
+      gradient: 'from-slate-800 to-slate-900',
+      bg: 'bg-slate-800/50',
+      textColor: 'text-slate-300',
+      iconColor: 'text-amber-400'
+    },
+    { 
+      id: 'traditional', 
+      label: 'Traditional Wear', 
+      icon: Crown, 
+      gradient: 'from-amber-900 to-amber-800',
+      bg: 'bg-amber-900/30',
+      textColor: 'text-amber-300',
+      iconColor: 'text-amber-400'
+    },
+    { 
+      id: 'party', 
+      label: 'Party Wear', 
+      icon: Gem, 
+      gradient: 'from-purple-900 to-purple-800',
+      bg: 'bg-purple-900/30',
+      textColor: 'text-purple-300',
+      iconColor: 'text-purple-400'
+    },
+    { 
+      id: 'casual', 
+      label: 'Casual Wear', 
+      icon: Shirt, 
+      gradient: 'from-emerald-900 to-emerald-800',
+      bg: 'bg-emerald-900/30',
+      textColor: 'text-emerald-300',
+      iconColor: 'text-emerald-400'
+    },
+    { 
+      id: 'watches', 
+      label: 'Luxury Watches', 
+      icon: Watch, 
+      gradient: 'from-slate-800 to-slate-900',
+      bg: 'bg-slate-800/50',
+      textColor: 'text-slate-300',
+      iconColor: 'text-slate-400'
+    },
+    { 
+      id: 'perfumes', 
+      label: 'Designer Perfumes', 
+      icon: SprayCan, 
+      gradient: 'from-rose-900 to-rose-800',
+      bg: 'bg-rose-900/30',
+      textColor: 'text-rose-300',
+      iconColor: 'text-rose-400'
+    },
+    { 
+      id: 'footwear', 
+      label: 'Footwear', 
+      icon: Footprints, 
+      gradient: 'from-blue-900 to-blue-800',
+      bg: 'bg-blue-900/30',
+      textColor: 'text-blue-300',
+      iconColor: 'text-blue-400'
+    },
+    { 
+      id: 'new', 
+      label: 'New Arrivals', 
+      icon: Zap, 
+      gradient: 'from-red-900 to-red-800',
+      bg: 'bg-red-900/30',
+      textColor: 'text-red-300',
+      iconColor: 'text-red-400'
+    },
   ];
 
   const sortOptions = [
-    { id: 'newest', label: 'Newest First' },
-    { id: 'price-low', label: 'Price: Low to High' },
-    { id: 'price-high', label: 'Price: High to Low' },
-    { id: 'popular', label: 'Most Popular' },
-    { id: 'rating', label: 'Highest Rated' },
+    { id: 'newest', label: 'Newest First', icon: Sparkles },
+    { id: 'price-low', label: 'Price: Low to High', icon: DollarSign },
+    { id: 'price-high', label: 'Price: High to Low', icon: DollarSign },
+    { id: 'popular', label: 'Most Popular', icon: TrendingUp },
   ];
 
-  // Loading skeleton
+  // Loading skeleton with dark theme
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 py-12">
         <div className="container mx-auto px-4">
           <div className="animate-pulse">
-            <div className="h-12 w-64 bg-gradient-to-r from-rose-100 to-pink-100 rounded-lg mb-8 mx-auto"></div>
+            <div className="h-12 w-64 bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg mb-8 mx-auto"></div>
             
             {/* Categories skeleton */}
             <div className="flex flex-wrap justify-center gap-3 mb-12">
-              {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
-                <div key={i} className="h-10 w-32 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg"></div>
+              {[1,2,3,4,5,6,7,8].map(i => (
+                <div key={i} className="h-10 w-32 bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg"></div>
               ))}
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {[1,2,3,4,5,6,7,8].map(i => (
-                <div key={i} className="bg-white rounded-2xl p-4 shadow-sm">
-                  <div className="h-64 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl mb-4"></div>
-                  <div className="h-4 bg-gray-100 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-100 rounded w-2/3"></div>
-                  <div className="h-8 bg-gradient-to-r from-rose-100 to-pink-100 rounded-lg mt-3"></div>
+                <div key={i} className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700">
+                  <div className="h-64 bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl mb-4"></div>
+                  <div className="h-4 bg-slate-800 rounded mb-2"></div>
+                  <div className="h-4 bg-slate-800 rounded w-2/3"></div>
+                  <div className="h-8 bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg mt-3"></div>
                 </div>
               ))}
             </div>
@@ -265,27 +327,52 @@ function ProductsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-rose-50 via-pink-50 to-purple-50 border-b">
-        <div className="container mx-auto px-4 py-12">
+      <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-b border-slate-700">
+        <div className="container mx-auto px-4 py-12 md:py-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-rose-700 via-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
-              Premium Collection
+            <div className="inline-flex items-center gap-2 mb-4">
+              <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-2 rounded-lg">
+                <ShoppingBag className="w-6 h-6" />
+              </div>
+              <span className="text-sm font-medium text-amber-300">Premium Collection</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-amber-300 via-amber-200 to-amber-300 bg-clip-text text-transparent mb-4">
+              Shop Luxury Fashion
             </h1>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-6">
-              Discover luxury perfumes, elegant watches, fashion apparel, and more
+            <p className="text-slate-300 text-lg max-w-2xl mx-auto mb-6">
+              Discover curated collections of traditional elegance, party glamour, casual chic, 
+              luxury watches, designer perfumes, and premium footwear.
             </p>
-            <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
-              {['Traditional Wear', 'Designer Perfumes', 'Luxury Watches', 'Casual Fashion', 'Accessories'].map((tag, i) => (
-                <span key={tag} className="px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-white">
-                  {tag}
-                </span>
-              ))}
+            
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search for traditional wear, perfumes, watches..."
+                  value={filters.searchQuery}
+                  onChange={(e) => updateFilter('searchQuery', e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-slate-800/50 border border-slate-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-white placeholder-slate-500"
+                />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500" size={24} />
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-3xl mx-auto">
+                {['Traditional Wear', 'Party Wear', 'Casual Wear', 'Designer Perfumes', 'Luxury Watches', 'Premium Footwear'].map((tag, i) => (
+                  <button
+                    key={tag}
+                    onClick={() => updateFilter('category', tag.toLowerCase().replace(' ', '-').split(' ')[0])}
+                    className="px-4 py-2 bg-slate-800/50 backdrop-blur-sm rounded-full text-sm font-medium text-slate-300 hover:text-amber-300 hover:bg-slate-800 transition-all border border-slate-700"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
@@ -296,15 +383,15 @@ function ProductsContent() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-8 md:mb-12"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Shop by Category</h2>
+            <h2 className="text-xl font-semibold text-amber-200">Browse Collections</h2>
             <button 
               onClick={() => document.getElementById('categories-scroll')?.scrollBy({ left: 200, behavior: 'smooth' })}
-              className="text-sm text-rose-600 hover:text-rose-800 flex items-center gap-1"
+              className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1"
             >
-              View All
+              Scroll More
               <ChevronDown size={16} className="rotate-270" />
             </button>
           </div>
@@ -317,12 +404,6 @@ function ProductsContent() {
               const Icon = cat.icon;
               const isActive = cat.id === 'new' 
                 ? filters.showNewArrivals 
-                : cat.id === 'sale'
-                ? false // You can add sale filter logic here
-                : cat.id === 'trending'
-                ? false // You can add trending filter logic here
-                : cat.id === 'wishlist'
-                ? false // You can add wishlist filter logic here
                 : filters.category === cat.id;
               
               return (
@@ -331,24 +412,15 @@ function ProductsContent() {
                   onClick={() => {
                     if (cat.id === 'new') {
                       updateFilter('showNewArrivals', !filters.showNewArrivals);
-                    } else if (cat.id === 'sale') {
-                      // Add sale filter logic
-                      updateFilter('category', 'sale');
-                    } else if (cat.id === 'trending') {
-                      // Add trending filter logic
-                      updateFilter('category', 'trending');
-                    } else if (cat.id === 'wishlist') {
-                      // Add wishlist logic
-                      alert('Wishlist feature coming soon!');
                     } else {
                       updateFilter('category', cat.id);
                     }
                   }}
-                  className={`flex-shrink-0 flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-2xl transition-all duration-300 hover:scale-105 ${isActive 
-                    ? `bg-gradient-to-r ${cat.color} border-2 border-white shadow-lg ${cat.textColor} font-semibold` 
-                    : 'bg-white border border-gray-200 hover:border-gray-300 text-gray-600 hover:text-gray-800 hover:shadow-md'}`}
+                  className={`flex-shrink-0 flex flex-col items-center justify-center gap-2 px-6 py-4 rounded-2xl transition-all duration-300 hover:scale-105 border ${isActive 
+                    ? `bg-gradient-to-r ${cat.gradient} border-amber-500 shadow-lg ${cat.textColor} font-semibold` 
+                    : 'bg-slate-800/50 border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white hover:shadow-lg'}`}
                 >
-                  <Icon size={24} />
+                  <Icon size={24} className={cat.iconColor} />
                   <span className="text-sm whitespace-nowrap">{cat.label}</span>
                 </button>
               );
@@ -358,10 +430,12 @@ function ProductsContent() {
 
         {/* Main Controls */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
-          {/* Results Count */}
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-rose-700">{filteredProducts.length}</span> of {products.length} products
+          {/* Results Count & Active Filters */}
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="text-sm text-slate-400">
+                Showing <span className="font-semibold text-amber-300">{filteredProducts.length}</span> of {products.length} products
+              </div>
             </div>
             
             {/* Active Filters */}
@@ -370,7 +444,7 @@ function ProductsContent() {
                 {activeFilters.map(filter => (
                   <span
                     key={filter}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-700 rounded-full text-sm border border-rose-200"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-800/70 text-amber-300 rounded-full text-sm border border-slate-700"
                   >
                     {filter}
                     <button
@@ -385,7 +459,7 @@ function ProductsContent() {
                           updateFilter('category', 'all');
                         }
                       }}
-                      className="hover:bg-rose-200 rounded-full p-0.5 transition-colors"
+                      className="hover:bg-slate-700 rounded-full p-0.5 transition-colors"
                     >
                       <X size={14} />
                     </button>
@@ -393,7 +467,7 @@ function ProductsContent() {
                 ))}
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-gray-500 hover:text-rose-700 font-medium flex items-center gap-1"
+                  className="text-sm text-slate-400 hover:text-amber-300 font-medium flex items-center gap-1"
                 >
                   Clear all
                   <X size={14} />
@@ -409,7 +483,7 @@ function ProductsContent() {
               <select
                 value={filters.sortBy}
                 onChange={(e) => updateFilter('sortBy', e.target.value)}
-                className="appearance-none bg-white border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent cursor-pointer hover:border-rose-300 transition-all shadow-sm"
+                className="appearance-none bg-slate-800/50 border border-slate-700 rounded-xl pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent cursor-pointer hover:border-slate-600 transition-all text-white"
               >
                 {sortOptions.map(option => (
                   <option key={option.id} value={option.id}>
@@ -417,20 +491,24 @@ function ProductsContent() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+              <SortAsc className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
             </div>
 
             {/* View Toggle */}
-            <div className="flex bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+            <div className="flex bg-slate-800/50 border border-slate-700 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gradient-to-r from-rose-50 to-pink-50 text-rose-700' : 'text-gray-500 hover:text-rose-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' 
+                  ? 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 text-amber-300 border border-amber-700/50' 
+                  : 'text-slate-400 hover:text-amber-300 hover:bg-slate-800'}`}
               >
                 <Grid3x3 size={20} />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-rose-50 to-pink-50 text-rose-700' : 'text-gray-500 hover:text-rose-600'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' 
+                  ? 'bg-gradient-to-r from-amber-900/30 to-amber-800/30 text-amber-300 border border-amber-700/50' 
+                  : 'text-slate-400 hover:text-amber-300 hover:bg-slate-800'}`}
               >
                 <List size={20} />
               </button>
@@ -439,7 +517,7 @@ function ProductsContent() {
             {/* Mobile Filter Button */}
             <button
               onClick={() => setMobileFiltersOpen(true)}
-              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm hover:border-rose-300 hover:text-rose-700 transition-all shadow-sm"
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-xl text-sm hover:border-amber-500 hover:text-amber-300 transition-all"
             >
               <Filter size={16} />
               Filters
@@ -453,13 +531,13 @@ function ProductsContent() {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white rounded-2xl p-6 border border-gray-100 shadow-lg sticky top-24"
+              className="bg-slate-800/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 sticky top-24"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-semibold text-lg text-gray-800">Filters</h3>
+                <h3 className="font-semibold text-lg text-amber-200">Filters</h3>
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-rose-600 hover:text-rose-800 font-medium"
+                  className="text-sm text-amber-400 hover:text-amber-300 font-medium"
                 >
                   Reset All
                 </button>
@@ -467,9 +545,9 @@ function ProductsContent() {
 
               {/* Categories Filter */}
               <div className="mb-8">
-                <h4 className="font-medium text-gray-700 mb-3">Categories</h4>
+                <h4 className="font-medium text-slate-300 mb-3">Categories</h4>
                 <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-                  {categories.filter(cat => !['new', 'sale', 'trending', 'wishlist'].includes(cat.id)).map((cat) => {
+                  {categories.filter(cat => cat.id !== 'new').map((cat) => {
                     const Icon = cat.icon;
                     const isActive = filters.category === cat.id;
                     
@@ -478,10 +556,10 @@ function ProductsContent() {
                         key={cat.id}
                         onClick={() => updateFilter('category', cat.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isActive 
-                          ? `bg-gradient-to-r ${cat.color} ${cat.textColor} border border-white shadow-sm` 
-                          : 'hover:bg-gray-50 text-gray-600'}`}
+                          ? `bg-gradient-to-r ${cat.gradient} ${cat.textColor} border border-slate-600 shadow-sm` 
+                          : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
                       >
-                        <Icon size={18} />
+                        <Icon size={18} className={cat.iconColor} />
                         <span className="text-sm">{cat.label}</span>
                       </button>
                     );
@@ -491,28 +569,21 @@ function ProductsContent() {
 
               {/* Special Filters */}
               <div className="mb-8">
-                <h4 className="font-medium text-gray-700 mb-3">Special Collections</h4>
+                <h4 className="font-medium text-slate-300 mb-3">Special Collections</h4>
                 <div className="space-y-2">
-                  {categories.filter(cat => ['new', 'sale'].includes(cat.id)).map((cat) => {
+                  {categories.filter(cat => cat.id === 'new').map((cat) => {
                     const Icon = cat.icon;
-                    const isActive = cat.id === 'new' ? filters.showNewArrivals : false;
+                    const isActive = filters.showNewArrivals;
                     
                     return (
                       <button
                         key={cat.id}
-                        onClick={() => {
-                          if (cat.id === 'new') {
-                            updateFilter('showNewArrivals', !filters.showNewArrivals);
-                          } else {
-                            // Add sale filter logic
-                            alert('Sale filter coming soon!');
-                          }
-                        }}
+                        onClick={() => updateFilter('showNewArrivals', !filters.showNewArrivals)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isActive 
-                          ? `bg-gradient-to-r ${cat.color} ${cat.textColor} border border-white shadow-sm` 
-                          : 'hover:bg-gray-50 text-gray-600'}`}
+                          ? `bg-gradient-to-r ${cat.gradient} ${cat.textColor} border border-slate-600 shadow-sm` 
+                          : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
                       >
-                        <Icon size={18} />
+                        <Icon size={18} className={cat.iconColor} />
                         <span className="text-sm">{cat.label}</span>
                       </button>
                     );
@@ -523,8 +594,8 @@ function ProductsContent() {
               {/* Price Range */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-gray-700">Price Range (PKR)</h4>
-                  <span className="text-sm text-rose-600 font-medium">
+                  <h4 className="font-medium text-slate-300">Price Range (PKR)</h4>
+                  <span className="text-sm text-amber-400 font-medium">
                     {formatPKR(filters.priceRange[0])} - {formatPKR(filters.priceRange[1])}
                   </span>
                 </div>
@@ -536,7 +607,7 @@ function ProductsContent() {
                     step="500"
                     value={filters.priceRange[0]}
                     onChange={(e) => handlePriceRangeChange(0, parseInt(e.target.value))}
-                    className="w-full h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-rose-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:shadow-md"
+                    className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-amber-600 [&::-webkit-slider-thumb]:shadow-md"
                   />
                   <input
                     type="range"
@@ -545,10 +616,10 @@ function ProductsContent() {
                     step="500"
                     value={filters.priceRange[1]}
                     onChange={(e) => handlePriceRangeChange(1, parseInt(e.target.value))}
-                    className="w-full h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-rose-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:shadow-md mt-2"
+                    className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-amber-600 [&::-webkit-slider-thumb]:shadow-md mt-2"
                   />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                <div className="flex justify-between text-xs text-slate-500 mt-2">
                   <span>{formatPKR(0)}</span>
                   <span>{formatPKR(25000)}</span>
                   <span>{formatPKR(50000)}+</span>
@@ -578,7 +649,7 @@ function ProductsContent() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: i * 0.05 }}
                       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                      className="hover:shadow-xl transition-shadow duration-300"
+                      className="hover:shadow-2xl transition-all duration-300"
                     >
                       <ProductCard product={product} view={viewMode} />
                     </motion.div>
@@ -591,18 +662,18 @@ function ProductsContent() {
                 animate={{ opacity: 1 }}
                 className="text-center py-20"
               >
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center shadow-lg">
-                  <Sparkles className="text-rose-500" size={48} />
+                <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-700">
+                  <Sparkles className="text-amber-400" size={48} />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                <h3 className="text-2xl font-semibold text-amber-200 mb-2">
                   No products found
                 </h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                <p className="text-slate-400 mb-6 max-w-md mx-auto">
                   Try adjusting your filters or browse our entire collection
                 </p>
                 <button
                   onClick={clearFilters}
-                  className="px-8 py-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-xl hover:from-rose-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl font-medium"
+                  className="px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg hover:shadow-xl font-medium"
                 >
                   View All Products
                 </button>
@@ -620,7 +691,7 @@ function ProductsContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+              className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm"
               onClick={() => setMobileFiltersOpen(false)}
             />
             <motion.div
@@ -628,14 +699,14 @@ function ProductsContent() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'tween' }}
-              className="fixed top-0 right-0 h-full w-full max-w-md bg-gradient-to-b from-white to-gray-50 z-50 lg:hidden shadow-2xl"
+              className="fixed top-0 right-0 h-full w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 z-50 lg:hidden shadow-2xl border-l border-slate-800"
             >
               <div className="p-6 h-full overflow-y-auto">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-bold text-gray-800">Filters</h3>
+                  <h3 className="text-xl font-bold text-amber-200">Filters</h3>
                   <button
                     onClick={() => setMobileFiltersOpen(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400"
                   >
                     <X size={24} />
                   </button>
@@ -644,29 +715,21 @@ function ProductsContent() {
                 <div className="space-y-6">
                   {/* Categories for mobile */}
                   <div>
-                    <h4 className="font-medium text-gray-700 mb-3">Categories</h4>
+                    <h4 className="font-medium text-slate-300 mb-3">Categories</h4>
                     <div className="space-y-2">
-                      {categories.map((cat) => {
+                      {categories.filter(cat => cat.id !== 'new').map((cat) => {
                         const Icon = cat.icon;
-                        const isActive = cat.id === 'new' 
-                          ? filters.showNewArrivals 
-                          : filters.category === cat.id;
+                        const isActive = filters.category === cat.id;
                         
                         return (
                           <button
                             key={cat.id}
-                            onClick={() => {
-                              if (cat.id === 'new') {
-                                updateFilter('showNewArrivals', !filters.showNewArrivals);
-                              } else {
-                                updateFilter('category', cat.id);
-                              }
-                            }}
+                            onClick={() => updateFilter('category', cat.id)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isActive 
-                              ? `bg-gradient-to-r ${cat.color} ${cat.textColor} border border-white shadow-sm` 
-                              : 'hover:bg-gray-50 text-gray-600'}`}
+                              ? `bg-gradient-to-r ${cat.gradient} ${cat.textColor} border border-slate-600 shadow-sm` 
+                              : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
                           >
-                            <Icon size={18} />
+                            <Icon size={18} className={cat.iconColor} />
                             <span className="text-sm">{cat.label}</span>
                           </button>
                         );
@@ -674,11 +737,32 @@ function ProductsContent() {
                     </div>
                   </div>
                   
+                  {/* New Arrivals for mobile */}
+                  <div>
+                    {categories.filter(cat => cat.id === 'new').map((cat) => {
+                      const Icon = cat.icon;
+                      const isActive = filters.showNewArrivals;
+                      
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => updateFilter('showNewArrivals', !filters.showNewArrivals)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${isActive 
+                            ? `bg-gradient-to-r ${cat.gradient} ${cat.textColor} border border-slate-600 shadow-sm` 
+                            : 'hover:bg-slate-800/50 text-slate-400 hover:text-white'}`}
+                        >
+                          <Icon size={18} className={cat.iconColor} />
+                          <span className="text-sm">{cat.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
                   {/* Price Range for mobile */}
                   <div>
                     <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium text-gray-700">Price Range (PKR)</h4>
-                      <span className="text-sm text-rose-600 font-medium">
+                      <h4 className="font-medium text-slate-300">Price Range (PKR)</h4>
+                      <span className="text-sm text-amber-400 font-medium">
                         {formatPKR(filters.priceRange[0])} - {formatPKR(filters.priceRange[1])}
                       </span>
                     </div>
@@ -690,7 +774,7 @@ function ProductsContent() {
                         step="500"
                         value={filters.priceRange[0]}
                         onChange={(e) => handlePriceRangeChange(0, parseInt(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-rose-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:shadow-md"
+                        className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-amber-600 [&::-webkit-slider-thumb]:shadow-md"
                       />
                       <input
                         type="range"
@@ -699,14 +783,14 @@ function ProductsContent() {
                         step="500"
                         value={filters.priceRange[1]}
                         onChange={(e) => handlePriceRangeChange(1, parseInt(e.target.value))}
-                        className="w-full h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-rose-500 [&::-webkit-slider-thumb]:to-pink-500 [&::-webkit-slider-thumb]:shadow-md mt-2"
+                        className="w-full h-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-amber-600 [&::-webkit-slider-thumb]:shadow-md mt-2"
                       />
                     </div>
                   </div>
                   
                   <button
                     onClick={clearFilters}
-                    className="w-full py-3 bg-gradient-to-r from-rose-50 to-pink-50 text-rose-700 rounded-xl font-medium hover:from-rose-100 hover:to-pink-100 transition-colors border border-rose-200"
+                    className="w-full py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-amber-300 rounded-xl font-medium hover:from-slate-900 hover:to-slate-800 transition-all border border-slate-700"
                   >
                     Reset All Filters
                   </button>
@@ -724,16 +808,16 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center shadow-lg">
-            <Loader2 className="w-12 h-12 animate-spin text-rose-600" />
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center border border-slate-700">
+            <Loader2 className="w-12 h-12 animate-spin text-amber-400" />
           </div>
-          <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+          <h3 className="text-2xl font-semibold text-amber-200 mb-2">
             Loading Products
           </h3>
-          <p className="text-gray-500">
-            Please wait while we load our premium collection...
+          <p className="text-slate-400">
+            Loading our premium collection...
           </p>
         </div>
       </div>

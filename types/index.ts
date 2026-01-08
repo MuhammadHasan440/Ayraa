@@ -15,11 +15,13 @@ export interface Product {
   slug?: string;
   createdAt?: any;
   updatedAt?: any;
+  isBestSeller?: boolean;
 }
 
 export interface CartItem {
   id: string;
   productId: string;
+  category: string;
   name: string;
   price: number;
   quantity: number;

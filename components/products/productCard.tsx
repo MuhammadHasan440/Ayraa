@@ -4,10 +4,10 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Eye, Star } from 'lucide-react';
+import { Heart, ShoppingBag, Eye, Star, Sparkles, Shield, Zap } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/lib/context/CartContext';
-import {CurrencyFormatter} from '@/components/ui/CurrencyFormatter'; // ✅ Default import
+import { CurrencyFormatter } from '@/components/ui/CurrencyFormatter';
 
 interface ProductCardProps {
   product: Product;
@@ -24,6 +24,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
     const cartItem = {
       id: `${product.id}-default-default`,
       productId: product.id,
+      category: product.category,
       name: product.name,
       price: product.price,
       quantity: 1,
@@ -39,10 +40,12 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
     if (button) {
       const originalText = button.textContent;
       button.textContent = 'Added!';
-      button.classList.add('bg-green-600');
+      button.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-amber-500');
+      button.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-emerald-500');
       setTimeout(() => {
         button.textContent = originalText;
-        button.classList.remove('bg-green-600');
+        button.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-emerald-500');
+        button.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-amber-500');
       }, 1000);
     }
   };
@@ -55,25 +58,28 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
     return (
       <motion.div
         whileHover={{ scale: 1.01 }}
-        className={`flex flex-col md:flex-row gap-6 bg-white rounded-2xl shadow-sm border p-6 hover:shadow-md transition-shadow ${className}`}
+        className={`flex flex-col md:flex-row gap-6 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-6 hover:shadow-xl transition-all backdrop-blur-sm hover:border-amber-500/30 ${className}`}
       >
         {/* Image */}
         <Link href={`/products/${product.id}`} className="block md:w-64 flex-shrink-0">
-          <div className="relative h-64 md:h-full rounded-xl overflow-hidden bg-gray-100">
+          <div className="relative h-64 md:h-full rounded-xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 group">
             <Image
               src={product.images[0]}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 256px) 100vw, 256px"
             />
             {product.isNewArrival && (
-              <div className="absolute top-3 left-3 px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-full">
-                NEW
+              <div className="absolute top-3 left-3 px-3 py-1 bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs font-bold rounded-full shadow-lg">
+                <div className="flex items-center gap-1">
+                  <Sparkles size={10} />
+                  NEW
+                </div>
               </div>
             )}
             {product.originalPrice && (
-              <div className="absolute top-3 right-3 px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+              <div className="absolute top-3 right-3 px-3 py-1 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
                 SALE
               </div>
             )}
@@ -83,38 +89,46 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
         {/* Details */}
         <div className="flex-1">
           <div className="flex justify-between items-start mb-3">
-            <div>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            <div className="flex flex-wrap gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-slate-800 to-slate-900 border ${
                 product.category === 'traditional' 
-                  ? 'bg-purple-100 text-purple-800' 
-                  : 'bg-green-100 text-green-800'
+                  ? 'border-purple-500/30 text-purple-300' 
+                  : 'border-emerald-500/30 text-emerald-300'
               }`}>
                 {product.category === 'traditional' ? 'Traditional' : 'Casual'}
               </span>
               {product.isNewArrival && (
-                <span className="ml-2 px-3 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-full">
-                  New Arrival
+                <span className="px-3 py-1 bg-gradient-to-r from-amber-600/20 to-amber-500/20 text-amber-300 text-xs font-medium rounded-full border border-amber-500/30">
+                  <div className="flex items-center gap-1">
+                    <Sparkles size={10} />
+                    New Arrival
+                  </div>
+                </span>
+              )}
+              {product.isBestSeller && (
+                <span className="px-3 py-1 bg-gradient-to-r from-rose-600/20 to-rose-500/20 text-rose-300 text-xs font-medium rounded-full border border-rose-500/30">
+                  Best Seller
                 </span>
               )}
             </div>
             <button
               onClick={() => setIsFavorite(!isFavorite)}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-slate-800/50 rounded-full transition-colors border border-slate-700"
             >
               <Heart 
                 size={20} 
-                className={isFavorite ? 'fill-rose-500 text-rose-500' : 'text-gray-400'} 
+                className={isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-400 hover:text-amber-400'} 
               />
             </button>
           </div>
 
           <Link href={`/products/${product.id}`}>
-            <h3 className="text-xl font-bold mb-2 hover:text-rose-600 transition-colors">
+            <h3 className="text-xl font-bold mb-2 text-white hover:text-amber-300 transition-colors">
               {product.name}
             </h3>
           </Link>
 
-          <p className="text-gray-600 mb-4 line-clamp-2">{product.description}</p>
+          <p className="text-slate-400 mb-4 line-clamp-2">{product.description}</p>
 
           {/* Rating */}
           <div className="flex items-center gap-2 mb-4">
@@ -123,29 +137,38 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 <Star
                   key={i}
                   size={14}
-                  className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+                  className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}
                 />
               ))}
             </div>
-            <span className="text-sm text-gray-600">(48 reviews)</span>
-            <span className="text-sm text-gray-600 ml-4">•</span>
-            <span className="text-sm text-green-600 font-medium">
-              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+            <span className="text-sm text-slate-500">(48 reviews)</span>
+            <span className="text-sm text-slate-500 ml-4">•</span>
+            <span className={`text-sm font-medium flex items-center gap-1 ${
+              product.stock > 0 ? 'text-emerald-400' : 'text-red-400'
+            }`}>
+              {product.stock > 0 ? (
+                <>
+                  <Shield size={12} className="text-emerald-400" />
+                  In Stock
+                </>
+              ) : (
+                'Out of Stock'
+              )}
             </span>
           </div>
 
-          {/* Price - Using PKR */}
+          {/* Price */}
           <div className="flex items-center gap-3 mb-6">
-            <span className="text-2xl font-bold text-rose-700">
-              <CurrencyFormatter value={product.price} /> {/* ✅ Fixed */}
+            <span className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-amber-200 bg-clip-text text-transparent">
+              <CurrencyFormatter value={product.price} />
             </span>
             {product.originalPrice && (
               <>
-                <span className="text-lg text-gray-400 line-through">
-                  <CurrencyFormatter value={product.originalPrice} /> {/* ✅ Fixed */}
+                <span className="text-lg text-slate-500 line-through">
+                  <CurrencyFormatter value={product.originalPrice} />
                 </span>
-                <span className="px-2 py-1 bg-red-100 text-red-700 text-sm font-medium rounded">
-                  Save <CurrencyFormatter value={product.originalPrice - product.price} /> {/* ✅ Fixed */}
+                <span className="px-2 py-1 bg-gradient-to-r from-red-600/20 to-red-500/20 text-red-300 text-sm font-medium rounded border border-red-500/30">
+                  Save <CurrencyFormatter value={product.originalPrice - product.price} />
                 </span>
               </>
             )}
@@ -156,14 +179,14 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
             <button
               onClick={addToCart}
               disabled={product.stock === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg hover:from-amber-700 hover:to-amber-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             >
               <ShoppingBag size={18} />
               Add to Cart
             </button>
             <button
               onClick={quickView}
-              className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex items-center gap-2 px-6 py-3 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800/50 transition-colors font-medium hover:border-amber-500/30 hover:text-amber-300"
             >
               <Eye size={18} />
               Quick View
@@ -178,13 +201,13 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className={`group bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 ${className}`}
+      className={`group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 overflow-hidden hover:shadow-2xl transition-all duration-300 backdrop-blur-sm hover:border-amber-500/30 ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Container */}
       <Link href={`/products/${product.id}`} className="block relative">
-        <div className="relative h-80 overflow-hidden bg-gray-100">
+        <div className="relative h-80 overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800">
           <Image
             src={product.images[0]}
             alt={product.name}
@@ -196,19 +219,20 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {product.isNewArrival && (
-              <span className="px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-full">
+              <span className="px-3 py-1 bg-gradient-to-r from-amber-600 to-amber-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
+                <Sparkles size={10} />
                 NEW
               </span>
             )}
             {product.originalPrice && product.originalPrice > product.price && (
-              <span className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+              <span className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
                 -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
               </span>
             )}
-            <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+            <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg bg-gradient-to-r ${
               product.category === 'traditional' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-green-600 text-white'
+                ? 'from-purple-600 to-purple-500 text-white' 
+                : 'from-emerald-600 to-emerald-500 text-white'
             }`}>
               {product.category === 'traditional' ? 'Traditional' : 'Casual'}
             </span>
@@ -223,12 +247,12 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 e.preventDefault();
                 setIsFavorite(!isFavorite);
               }}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"
+              className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all border border-slate-700"
               title="Add to favorites"
             >
               <Heart 
                 size={18} 
-                className={isFavorite ? 'fill-rose-500 text-rose-500' : 'text-gray-600'} 
+                className={isFavorite ? 'fill-amber-400 text-amber-400' : 'text-slate-400 hover:text-amber-400'} 
               />
             </button>
             <button
@@ -236,16 +260,16 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 e.preventDefault();
                 quickView();
               }}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-50 transition-colors"
+              className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-900 rounded-full flex items-center justify-center shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all border border-slate-700"
               title="Quick view"
             >
-              <Eye size={18} className="text-gray-600" />
+              <Eye size={18} className="text-slate-400 hover:text-amber-400" />
             </button>
           </div>
 
           {/* Add to Cart Overlay */}
-          <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 transition-all duration-300 ${
-            isHovered ? 'opacity-100' : 'opacity-0'
+          <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 transition-all duration-300 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
           }`}>
             <button
               onClick={(e) => {
@@ -253,7 +277,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 addToCart();
               }}
               disabled={product.stock === 0}
-              className="w-full bg-white text-rose-700 py-3 rounded-lg font-medium hover:bg-rose-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-white py-3 rounded-lg font-medium hover:from-amber-700 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
             >
               <ShoppingBag size={18} />
               {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
@@ -266,11 +290,11 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
       <div className="p-5">
         <div className="mb-2">
           <Link href={`/products/${product.id}`}>
-            <h3 className="font-bold text-lg hover:text-rose-600 transition-colors line-clamp-1">
+            <h3 className="font-bold text-lg text-white hover:text-amber-300 transition-colors line-clamp-1">
               {product.name}
             </h3>
           </Link>
-          <p className="text-gray-600 text-sm line-clamp-2 mb-3">
+          <p className="text-slate-400 text-sm line-clamp-2 mb-3">
             {product.description}
           </p>
         </div>
@@ -282,37 +306,54 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
               <Star
                 key={i}
                 size={14}
-                className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}
+                className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}
               />
             ))}
-            <span className="text-sm text-gray-600 ml-1">(48)</span>
+            <span className="text-sm text-slate-500 ml-1">(48)</span>
           </div>
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+          <span className={`text-xs font-medium px-2 py-1 rounded-full border ${
             product.stock > 10 
-              ? 'bg-green-100 text-green-800'
+              ? 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/20 text-emerald-300 border-emerald-500/30'
               : product.stock > 0
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-red-100 text-red-800'
+              ? 'bg-gradient-to-r from-amber-600/20 to-amber-500/20 text-amber-300 border-amber-500/30'
+              : 'bg-gradient-to-r from-red-600/20 to-red-500/20 text-red-300 border-red-500/30'
           }`}>
             {product.stock > 10 ? 'In Stock' : product.stock > 0 ? 'Low Stock' : 'Out of Stock'}
           </span>
         </div>
 
-        {/* Price - Using PKR */}
+        {/* Price */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-rose-700">
-              <CurrencyFormatter value={product.price} /> {/* ✅ Fixed */}
+            <span className="text-xl font-bold bg-gradient-to-r from-amber-300 to-amber-200 bg-clip-text text-transparent">
+              <CurrencyFormatter value={product.price} />
             </span>
             {product.originalPrice && (
-              <span className="text-sm text-gray-400 line-through">
-                <CurrencyFormatter value={product.originalPrice} /> {/* ✅ Fixed */}
+              <span className="text-sm text-slate-500 line-through">
+                <CurrencyFormatter value={product.originalPrice} />
               </span>
             )}
           </div>
           
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-slate-500 flex items-center gap-1">
+            <Zap size={12} className="text-amber-400" />
             {product.sizes.length} sizes
+          </div>
+        </div>
+
+        {/* Additional Features */}
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700">
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Shield size={10} className="text-emerald-400" />
+            <span>Secure</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Sparkles size={10} className="text-amber-400" />
+            <span>Quality</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs text-slate-500">
+            <Zap size={10} className="text-blue-400" />
+            <span>Fast Delivery</span>
           </div>
         </div>
       </div>
