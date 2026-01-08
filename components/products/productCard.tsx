@@ -224,11 +224,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 NEW
               </span>
             )}
-            {product.originalPrice && product.originalPrice > product.price && (
-              <span className="px-3 py-1 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
-                -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
-              </span>
-            )}
+           
             <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-lg bg-gradient-to-r ${
               product.category === 'traditional' 
                 ? 'from-purple-600 to-purple-500 text-white' 
@@ -309,7 +305,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 className={i < 4 ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}
               />
             ))}
-            <span className="text-sm text-slate-500 ml-1">(48)</span>
+            
           </div>
           <span className={`text-xs font-medium px-2 py-1 rounded-full border ${
             product.stock > 10 
