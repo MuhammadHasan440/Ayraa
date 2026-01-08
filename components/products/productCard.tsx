@@ -341,21 +341,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
           </div>
         </div>
 
-        {/* Additional Features */}
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-700">
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Shield size={10} className="text-emerald-400" />
-            <span>Secure</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Sparkles size={10} className="text-amber-400" />
-            <span>Quality</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Zap size={10} className="text-blue-400" />
-            <span>Fast Delivery</span>
-          </div>
-        </div>
+      
       </div>
     </motion.div>
   );

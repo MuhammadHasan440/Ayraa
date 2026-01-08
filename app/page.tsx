@@ -58,35 +58,35 @@ export default function HomePage() {
   // NEW COLOR THEME: Deep Navy + Gold + White + Teal accents
   const features = [
     {
-      icon: <Truck className="w-6 h-6 md:w-8 md:h-8" />,
+      icon: <Truck className="w-5 h-5 md:w-6 md:h-6" />,
       title: 'Free Shipping',
       description: 'Over Rs:10,000',
       color: 'bg-teal-50 border-teal-100',
       iconColor: 'text-teal-600'
     },
     {
-      icon: <Shield className="w-6 h-6 md:w-8 md:h-8" />,
+      icon: <Shield className="w-5 h-5 md:w-6 md:h-6" />,
       title: 'Secure Payment',
       description: '100% Secure',
       color: 'bg-blue-50 border-blue-100',
       iconColor: 'text-blue-600'
     },
     {
-      icon: <RefreshCw className="w-6 h-6 md:w-8 md:h-8" />,
+      icon: <RefreshCw className="w-5 h-5 md:w-6 md:h-6" />,
       title: 'Easy Returns',
       description: '30-Day Policy',
       color: 'bg-amber-50 border-amber-100',
       iconColor: 'text-amber-600'
     },
     {
-      icon: <Zap className="w-6 h-6 md:w-8 md:h-8" />,
+      icon: <Zap className="w-5 h-5 md:w-6 md:h-6" />,
       title: 'Fast Delivery',
       description: '2-3 Days',
       color: 'bg-rose-50 border-rose-100',
       iconColor: 'text-rose-600'
     },
     {
-      icon: <Star className="w-6 h-6 md:w-8 md:h-8" />,
+      icon: <Star className="w-5 h-5 md:w-6 md:h-6" />,
       title: 'Premium Quality',
       description: 'Luxury Materials',
       color: 'bg-violet-50 border-violet-100',
@@ -100,7 +100,7 @@ export default function HomePage() {
       id: 'traditional',
       name: 'Traditional Wear',
       description: 'Elegant ethnic & bridal collections',
-      icon: <Crown className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Crown className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-amber-600 to-amber-700',
       bg: 'bg-gradient-to-br from-amber-50 to-amber-100',
       href: '/products?category=traditional'
@@ -109,7 +109,7 @@ export default function HomePage() {
       id: 'party',
       name: 'Party Wear',
       description: 'Glamorous occasion outfits',
-      icon: <Gem className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Gem className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-purple-600 to-violet-700',
       bg: 'bg-gradient-to-br from-purple-50 to-violet-100',
       href: '/products?category=party'
@@ -118,7 +118,7 @@ export default function HomePage() {
       id: 'casual',
       name: 'Casual Wear',
       description: 'Everyday comfortable fashion',
-      icon: <Shirt className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Shirt className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-teal-600 to-emerald-700',
       bg: 'bg-gradient-to-br from-teal-50 to-emerald-100',
       href: '/products?category=casual'
@@ -127,7 +127,7 @@ export default function HomePage() {
       id: 'watches',
       name: 'Luxury Watches',
       description: 'Men & Women designer watches',
-      icon: <Watch className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Watch className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-slate-700 to-slate-900',
       bg: 'bg-gradient-to-br from-slate-100 to-slate-200',
       href: '/products?category=watches'
@@ -136,7 +136,7 @@ export default function HomePage() {
       id: 'perfumes',
       name: 'Designer Perfumes',
       description: 'Signature fragrances collection',
-      icon: <Scissors className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Scissors className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-rose-600 to-pink-700',
       bg: 'bg-gradient-to-br from-rose-50 to-pink-100',
       href: '/products?category=perfumes'
@@ -145,7 +145,7 @@ export default function HomePage() {
       id: 'shoes',
       name: "Men's Shoes",
       description: 'Premium footwear collection',
-      icon: <Footprints className="w-8 h-8 md:w-10 md:h-10" />,
+      icon: <Footprints className="w-7 h-7 md:w-8 md:h-8" />,
       gradient: 'from-blue-600 to-cyan-700',
       bg: 'bg-gradient-to-br from-blue-50 to-cyan-100',
       href: '/products?category=shoes'
@@ -175,7 +175,7 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="text-center lg:text-left"
+              className="text-center lg:text-left pt-5"
             >
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -333,220 +333,142 @@ export default function HomePage() {
         </div>
       </section>
 
-   
-
-{/* Featured Products - Responsive */}
-<section className="py-12 md:py-20 bg-gradient-to-b from-white to-slate-50">
-  <div className="container mx-auto px-4">
-    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
-      <div className="mb-6 md:mb-0">
-        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-          Featured Products
-        </h2>
-        <p className="text-base md:text-lg text-slate-600">
-          Handpicked luxury from all collections
-        </p>
-      </div>
-      <Link
-        href="/products"
-        className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors font-medium text-base md:text-lg w-fit"
-      >
-        <span>View All</span>
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-      </Link>
-    </div>
-
-    {loading ? (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="animate-pulse">
-            <div className="bg-slate-200 aspect-square rounded-xl"></div>
-            <div className="h-4 bg-slate-200 rounded mt-3"></div>
-            <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
-          </div>
-        ))}
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {featuredProducts.map((product, index) => (
-          <motion.div
-            key={product.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            whileHover={{ y: -5 }}
-            className="transform-gpu"
-          >
-            <div className="bg-white rounded-xl p-3 border border-slate-200 hover:shadow-lg transition-all duration-300 h-full">
-              {/* Product Image */}
-              <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-slate-100">
-                {product.images && product.images[0] ? (
-                  <Image
-                    src={product.images[0]}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                    <Shirt className="w-12 h-12 text-slate-400" />
-                  </div>
-                )}
-                {product.isNewArrival && (
-                  <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
-                    New
-                  </div>
-                )}
-              </div>
-              
-              {/* Product Info */}
-              <h3 className="font-medium text-sm text-slate-900 line-clamp-1 mb-1">
-                {product.name}
-              </h3>
-              <p className="text-xs text-slate-600 line-clamp-2 mb-2 h-8">
-                {product.description}
+      {/* Featured Products - Fixed Responsive Layout */}
+      <section className="py-12 md:py-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
+            <div className="mb-6 md:mb-0">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-2 text-white">
+                Featured Products
+              </h2>
+              <p className="text-sm md:text-base text-slate-600">
+                Handpicked luxury from all collections
               </p>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">
-                  Rs. {product.price.toLocaleString()}
-                </span>
-                <Link
-                  href={`/products/${product.slug || product.id}`}
-                  className="text-amber-600 hover:text-amber-700 text-xs font-medium"
-                >
-                  View
-                </Link>
-              </div>
             </div>
-          </motion.div>
-        ))}
-      </div>
-    )}
-  </div>
-</section>
-
-{/* New Arrivals - Responsive */}
-<section className="py-12 md:py-20 bg-gradient-to-b from-slate-50 to-white">
-  <div className="container mx-auto px-4">
-    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
-      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-0">
-        <div className="p-2 md:p-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-        </div>
-        <div>
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-            New Arrivals
-          </h2>
-          <p className="text-base md:text-lg text-slate-600">
-            Fresh styles just added
-          </p>
-        </div>
-      </div>
-
-      <Link
-        href="/products?new=true"
-        className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all duration-300 font-medium text-base md:text-lg w-fit"
-      >
-        <span>View All New</span>
-        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-      </Link>
-    </div>
-
-    {loading ? (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="animate-pulse">
-            <div className="bg-slate-200 aspect-square rounded-xl"></div>
-            <div className="h-4 bg-slate-200 rounded mt-3"></div>
-            <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
+            <Link
+              href="/products"
+              className="group inline-flex items-center justify-center md:justify-start gap-2 px-5 py-2.5 md:px-6 md:py-3 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors font-medium text-sm md:text-base w-fit"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
-        ))}
-      </div>
-    ) : (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {newArrivals.map((product, index) => (
-          <motion.div
-            key={product.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            className="transform-gpu"
-          >
-            <div className="bg-white rounded-xl p-3 border border-slate-200 hover:shadow-lg transition-all duration-300 h-full">
-              {/* Product Image */}
-              <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-slate-100">
-                {product.images && product.images[0] ? (
-                  <Image
-                    src={product.images[0]}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                    <Shirt className="w-12 h-12 text-slate-400" />
-                  </div>
-                )}
-                <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
-                  New
+
+          {loading ? (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-slate-200 aspect-square rounded-lg md:rounded-xl"></div>
+                  <div className="h-4 bg-slate-200 rounded mt-2 md:mt-3"></div>
+                  <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
                 </div>
-              </div>
-              
-              {/* Product Info */}
-              <h3 className="font-medium text-sm text-slate-900 line-clamp-1 mb-1">
-                {product.name}
-              </h3>
-              <p className="text-xs text-slate-600 line-clamp-2 mb-2 h-8">
-                {product.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">
-                  Rs. {product.price.toLocaleString()}
-                </span>
-                <Link
-                  href={`/products/${product.slug || product.id}`}
-                  className="text-amber-600 hover:text-amber-700 text-xs font-medium"
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+              {featuredProducts.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  whileHover={{ y: -4 }}
+                  className="transform-gpu"
                 >
-                  View
-                </Link>
+                  <div className="h-full">
+                    <ProductCard product={product} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* New Arrivals - Fixed Responsive Layout */}
+      <section className="py-12 md:py-20 bg-gradient-to-b from-slate-50 to-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
+            <div className="flex items-center gap-3 mb-6 md:mb-0">
+              <div className="p-2 md:p-3 rounded-lg md:rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900">
+                  New Arrivals
+                </h2>
+                <p className="text-sm md:text-base text-slate-600">
+                  Fresh styles just added
+                </p>
               </div>
             </div>
-          </motion.div>
-        ))}
-      </div>
-    )}
+
+            <Link
+              href="/products?new=true"
+              className="group inline-flex items-center justify-center md:justify-start gap-2 px-5 py-2.5 md:px-6 md:py-3 rounded-full border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all duration-300 font-medium text-sm md:text-base w-fit"
+            >
+              <span>View All New</span>
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-slate-200 aspect-square rounded-lg md:rounded-xl"></div>
+                  <div className="h-4 bg-slate-200 rounded mt-2 md:mt-3"></div>
+                  <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4">
+              {newArrivals.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02 }}
+                  className="transform-gpu"
+                >
+                  <div className="h-full">
+                    <ProductCard product={product} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           {/* Category Highlights - Responsive */}
-          <div className="mt-12 md:mt-20 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+          <div className="mt-12 md:mt-20 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
             {/* Traditional Wear Showcase */}
             <motion.div
               whileHover={{ scale: 1.01 }}
-              className="relative h-64 md:h-80 lg:h-96 rounded-2xl md:rounded-3xl overflow-hidden group"
+              className="relative h-56 sm:h-64 md:h-72 lg:h-80 xl:h-96 rounded-xl md:rounded-2xl lg:rounded-3xl overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent z-10" />
               <div 
                 className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
                 style={{ backgroundImage: "url('/traditional-showcase.jpg')" }}
               />
-              <div className="relative z-20 h-full flex flex-col justify-end p-6 md:p-10">
-                <span className="text-amber-300 text-sm md:text-base font-medium mb-2">
+              <div className="relative z-20 h-full flex flex-col justify-end p-4 md:p-6 lg:p-8 xl:p-10">
+                <span className="text-amber-300 text-xs md:text-sm lg:text-base font-medium mb-1 md:mb-2">
                   Premium Collection
                 </span>
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2 md:mb-3 lg:mb-4">
                   Traditional Elegance
                 </h3>
-                <p className="text-white/80 text-sm md:text-base mb-4 md:mb-6 max-w-md">
+                <p className="text-white/80 text-xs md:text-sm lg:text-base mb-3 md:mb-4 lg:mb-6 max-w-md">
                   Exquisite ethnic wear with intricate embroidery
                 </p>
                 <Link
                   href="/products?category=traditional"
-                  className="inline-flex items-center gap-2 md:gap-3 px-5 py-2.5 md:px-8 md:py-4 bg-white text-slate-900 rounded-full hover:bg-amber-50 transition-all duration-300 font-medium text-sm md:text-base w-fit group/btn"
+                  className="inline-flex items-center gap-2 md:gap-3 px-4 py-2 md:px-5 md:py-2.5 lg:px-6 lg:py-3 xl:px-8 xl:py-4 bg-white text-slate-900 rounded-full hover:bg-amber-50 transition-all duration-300 font-medium text-xs md:text-sm lg:text-base w-fit group/btn"
                 >
                   <span>Explore Collection</span>
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </motion.div>
@@ -554,29 +476,29 @@ export default function HomePage() {
             {/* Accessories Showcase */}
             <motion.div
               whileHover={{ scale: 1.01 }}
-              className="relative h-64 md:h-80 lg:h-96 rounded-2xl md:rounded-3xl overflow-hidden group"
+              className="relative h-56 sm:h-64 md:h-72 lg:h-80 xl:h-96 rounded-xl md:rounded-2xl lg:rounded-3xl overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent z-10" />
               <div 
                 className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
                 style={{ backgroundImage: "url('/accessories-showcase.jpg')" }}
               />
-              <div className="relative z-20 h-full flex flex-col justify-end p-6 md:p-10">
-                <span className="text-teal-300 text-sm md:text-base font-medium mb-2">
+              <div className="relative z-20 h-full flex flex-col justify-end p-4 md:p-6 lg:p-8 xl:p-10">
+                <span className="text-teal-300 text-xs md:text-sm lg:text-base font-medium mb-1 md:mb-2">
                   Luxury Accessories
                 </span>
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2 md:mb-3 lg:mb-4">
                   Complete Your Style
                 </h3>
-                <p className="text-white/80 text-sm md:text-base mb-4 md:mb-6 max-w-md">
+                <p className="text-white/80 text-xs md:text-sm lg:text-base mb-3 md:mb-4 lg:mb-6 max-w-md">
                   Watches, perfumes & premium footwear
                 </p>
                 <Link
                   href="/products?category=watches"
-                  className="inline-flex items-center gap-2 md:gap-3 px-5 py-2.5 md:px-8 md:py-4 bg-white text-slate-900 rounded-full hover:bg-teal-50 transition-all duration-300 font-medium text-sm md:text-base w-fit group/btn"
+                  className="inline-flex items-center gap-2 md:gap-3 px-4 py-2 md:px-5 md:py-2.5 lg:px-6 lg:py-3 xl:px-8 xl:py-4 bg-white text-slate-900 rounded-full hover:bg-teal-50 transition-all duration-300 font-medium text-xs md:text-sm lg:text-base w-fit group/btn"
                 >
                   <span>Shop Accessories</span>
-                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 group-hover/btn:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </motion.div>
