@@ -333,109 +333,191 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products - Responsive */}
-      <section className="py-12 md:py-20 bg-gradient-to-b from-white to-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
-            <div className="mb-6 md:mb-0">
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-                Featured Products
-              </h2>
-              <p className="text-base md:text-lg text-slate-600">
-                Handpicked luxury from all collections
+   
+
+{/* Featured Products - Responsive */}
+<section className="py-12 md:py-20 bg-gradient-to-b from-white to-slate-50">
+  <div className="container mx-auto px-4">
+    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
+      <div className="mb-6 md:mb-0">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+          Featured Products
+        </h2>
+        <p className="text-base md:text-lg text-slate-600">
+          Handpicked luxury from all collections
+        </p>
+      </div>
+      <Link
+        href="/products"
+        className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors font-medium text-base md:text-lg w-fit"
+      >
+        <span>View All</span>
+        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+      </Link>
+    </div>
+
+    {loading ? (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="animate-pulse">
+            <div className="bg-slate-200 aspect-square rounded-xl"></div>
+            <div className="h-4 bg-slate-200 rounded mt-3"></div>
+            <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {featuredProducts.map((product, index) => (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            whileHover={{ y: -5 }}
+            className="transform-gpu"
+          >
+            <div className="bg-white rounded-xl p-3 border border-slate-200 hover:shadow-lg transition-all duration-300 h-full">
+              {/* Product Image */}
+              <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-slate-100">
+                {product.images && product.images[0] ? (
+                  <Image
+                    src={product.images[0]}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                    <Shirt className="w-12 h-12 text-slate-400" />
+                  </div>
+                )}
+                {product.isNewArrival && (
+                  <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                    New
+                  </div>
+                )}
+              </div>
+              
+              {/* Product Info */}
+              <h3 className="font-medium text-sm text-slate-900 line-clamp-1 mb-1">
+                {product.name}
+              </h3>
+              <p className="text-xs text-slate-600 line-clamp-2 mb-2 h-8">
+                {product.description}
               </p>
-            </div>
-            <Link
-              href="/products"
-              className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors font-medium text-base md:text-lg w-fit"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-slate-200 h-48 md:h-64 rounded-xl"></div>
-                  <div className="h-4 bg-slate-200 rounded mt-3 md:mt-4"></div>
-                  <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-              {featuredProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ y: -5 }}
-                  className="transform-gpu" // GPU acceleration for smooth animations
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">
+                  Rs. {product.price.toLocaleString()}
+                </span>
+                <Link
+                  href={`/products/${product.slug || product.id}`}
+                  className="text-amber-600 hover:text-amber-700 text-xs font-medium"
                 >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
+                  View
+                </Link>
+              </div>
             </div>
-          )}
+          </motion.div>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
+
+{/* New Arrivals - Responsive */}
+<section className="py-12 md:py-20 bg-gradient-to-b from-slate-50 to-white">
+  <div className="container mx-auto px-4">
+    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
+      <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-0">
+        <div className="p-2 md:p-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white">
+          <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
         </div>
-      </section>
+        <div>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+            New Arrivals
+          </h2>
+          <p className="text-base md:text-lg text-slate-600">
+            Fresh styles just added
+          </p>
+        </div>
+      </div>
 
-      {/* New Arrivals - Responsive */}
-      <section className="py-12 md:py-20 bg-gradient-to-b from-slate-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 md:mb-12">
-            <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-0">
-              <div className="p-2 md:p-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white">
-                <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
-              </div>
-              <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-                  New Arrivals
-                </h2>
-                <p className="text-base md:text-lg text-slate-600">
-                  Fresh styles just added
-                </p>
-              </div>
-            </div>
+      <Link
+        href="/products?new=true"
+        className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all duration-300 font-medium text-base md:text-lg w-fit"
+      >
+        <span>View All New</span>
+        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+      </Link>
+    </div>
 
-            <Link
-              href="/products?new=true"
-              className="group inline-flex items-center justify-center md:justify-start gap-2 px-6 py-3 rounded-full border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-all duration-300 font-medium text-base md:text-lg w-fit"
-            >
-              <span>View All New</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+    {loading ? (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="animate-pulse">
+            <div className="bg-slate-200 aspect-square rounded-xl"></div>
+            <div className="h-4 bg-slate-200 rounded mt-3"></div>
+            <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
           </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="bg-slate-200 h-48 md:h-64 rounded-xl"></div>
-                  <div className="h-4 bg-slate-200 rounded mt-3 md:mt-4"></div>
-                  <div className="h-3 bg-slate-200 rounded mt-2 w-2/3"></div>
+        ))}
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {newArrivals.map((product, index) => (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            whileHover={{ scale: 1.02 }}
+            className="transform-gpu"
+          >
+            <div className="bg-white rounded-xl p-3 border border-slate-200 hover:shadow-lg transition-all duration-300 h-full">
+              {/* Product Image */}
+              <div className="relative aspect-square rounded-lg overflow-hidden mb-3 bg-slate-100">
+                {product.images && product.images[0] ? (
+                  <Image
+                    src={product.images[0]}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                    <Shirt className="w-12 h-12 text-slate-400" />
+                  </div>
+                )}
+                <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                  New
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
-              {newArrivals.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  className="transform-gpu"
+              </div>
+              
+              {/* Product Info */}
+              <h3 className="font-medium text-sm text-slate-900 line-clamp-1 mb-1">
+                {product.name}
+              </h3>
+              <p className="text-xs text-slate-600 line-clamp-2 mb-2 h-8">
+                {product.description}
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900">
+                  Rs. {product.price.toLocaleString()}
+                </span>
+                <Link
+                  href={`/products/${product.slug || product.id}`}
+                  className="text-amber-600 hover:text-amber-700 text-xs font-medium"
                 >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
+                  View
+                </Link>
+              </div>
             </div>
-          )}
+          </motion.div>
+        ))}
+      </div>
+    )}
 
           {/* Category Highlights - Responsive */}
           <div className="mt-12 md:mt-20 grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
