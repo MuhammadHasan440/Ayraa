@@ -327,7 +327,7 @@ function ProductsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 text-white overflow-x-hidden">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 border-b border-slate-700">
         <div className="container mx-auto px-4 py-12 md:py-16">
@@ -397,8 +397,12 @@ function ProductsContent() {
           </div>
           <div 
             id="categories-scroll"
-            className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide scroll-smooth"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            className="flex overflow-x-auto gap-3 pb-4 scrollbar-hide scroll-smooth overflow-y-hidden"
+            style={{ 
+              scrollbarWidth: 'none', 
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
           >
             {categories.map((cat) => {
               const Icon = cat.icon;
@@ -629,7 +633,7 @@ function ProductsContent() {
           </div>
 
           {/* Products Grid */}
-          <div className="flex-1">
+          <div className="flex-1 overflow-hidden">
             {filteredProducts.length > 0 ? (
               <AnimatePresence mode="wait">
                 <motion.div
