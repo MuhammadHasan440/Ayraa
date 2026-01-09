@@ -451,7 +451,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent z-10" />
               <div 
                 className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                style={{ backgroundImage: "url('/traditional-showcase.jpg')" }}
+                style={{ backgroundImage: "url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMX_joTdxHqTkWCzut9oe2vWhTeVhyM9Y1Pg&s')" }}
               />
               <div className="relative z-20 h-full flex flex-col justify-end p-4 md:p-6 lg:p-8 xl:p-10">
                 <span className="text-amber-300 text-xs md:text-sm lg:text-base font-medium mb-1 md:mb-2">
@@ -481,7 +481,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/40 to-transparent z-10" />
               <div 
                 className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700"
-                style={{ backgroundImage: "url('/accessories-showcase.jpg')" }}
+                style={{ backgroundImage: "url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhFC6XvLkEgeMbHjeE9-rOCUX639GEkvzhUg&s')" }}
               />
               <div className="relative z-20 h-full flex flex-col justify-end p-4 md:p-6 lg:p-8 xl:p-10">
                 <span className="text-teal-300 text-xs md:text-sm lg:text-base font-medium mb-1 md:mb-2">

@@ -2,9 +2,7 @@ console.log('LOCAL ENV CHECK', {
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'SET' : 'NOT SET',
 });
-import dotenv from 'dotenv';
 
-// Load environment variables from .env file
 
 
 export const runtime = 'nodejs';
@@ -28,9 +26,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check required environment variables
-    // app/api/send-email/route.ts - TEMPORARY FIX
-// Replace the variable loading section with:
 
 const emailUser = process.env.EMAIL_USER ;
 const emailPass = process.env.EMAIL_PASSWORD;
@@ -89,13 +84,49 @@ console.log('Using email pass:', emailPass ? 'SET' : 'NOT SET');
       <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #f43f5e; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-          .order-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        </style>
+  body { 
+    font-family: Arial, sans-serif; 
+    line-height: 1.6; 
+    color: #1a1a1a; /* dark text for readability */ 
+    background-color: #e6f0ff; /* light blue background */ 
+  }
+  
+  .container { 
+    max-width: 600px; 
+    margin: 0 auto; 
+    padding: 20px; 
+  }
+  
+  .header { 
+    background-color: #1e3a8a; /* deep blue */ 
+    color: #ffd700; /* gold text */ 
+    padding: 20px; 
+    text-align: center; 
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .content { 
+    padding: 20px; 
+    background-color: #f0f8ff; /* very light blue */ 
+    border-radius: 0 0 8px 8px;
+  }
+  
+  .footer { 
+    text-align: center; 
+    padding: 20px; 
+    color: #555; 
+    font-size: 12px; 
+  }
+  
+  .order-details { 
+    background-color: #ffffff; 
+    padding: 15px; 
+    border-radius: 5px; 
+    margin: 15px 0; 
+    border-left: 4px solid #ffd700; /* gold accent */ 
+  }
+</style>
+
       </head>
       <body>
         <div class="container">
