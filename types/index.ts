@@ -5,7 +5,7 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  category: 'traditional' | 'casual';
+  category: 'traditional' | 'casual' | 'party wear' | 'watches' | 'perfumes';
   isNewArrival: boolean;
   isPublished?: boolean;
   sizes: string[];

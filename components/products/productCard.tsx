@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Eye, Star, Sparkles, Shield, Zap } from 'lucide-react';
+import { Heart, ShoppingBag, Eye, Star, Sparkles, Shield, Zap, Check } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/lib/context/CartContext';
 import { CurrencyFormatter } from '@/components/ui/CurrencyFormatter';
@@ -18,7 +18,18 @@ interface ProductCardProps {
 export default function ProductCard({ product, view = 'grid', className = '' }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [cartButtonState, setCartButtonState] = useState<'idle' | 'adding' | 'added'>('idle');
   const { dispatch } = useCart();
+
+  // Reset button state after animation completes
+  useEffect(() => {
+    if (cartButtonState === 'added') {
+      const timer = setTimeout(() => {
+        setCartButtonState('idle');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [cartButtonState]);
 
   const addToCart = () => {
     const cartItem = {
@@ -35,19 +46,13 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
 
     dispatch({ type: 'ADD_ITEM', payload: cartItem });
     
-    // Show quick feedback
-    const button = document.activeElement as HTMLElement;
-    if (button) {
-      const originalText = button.textContent;
-      button.textContent = 'Added!';
-      button.classList.remove('bg-gradient-to-r', 'from-amber-600', 'to-amber-500');
-      button.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-emerald-500');
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.classList.remove('bg-gradient-to-r', 'from-emerald-600', 'to-emerald-500');
-        button.classList.add('bg-gradient-to-r', 'from-amber-600', 'to-amber-500');
-      }, 1000);
-    }
+    // Update button state instead of manipulating DOM
+    setCartButtonState('adding');
+    
+    // Small delay to show "adding" state before "added" confirmation
+    setTimeout(() => {
+      setCartButtonState('added');
+    }, 100);
   };
 
   const quickView = () => {
@@ -178,11 +183,31 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
           <div className="flex flex-wrap gap-3">
             <button
               onClick={addToCart}
-              disabled={product.stock === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg hover:from-amber-700 hover:to-amber-600 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              disabled={product.stock === 0 || cartButtonState === 'adding' || cartButtonState === 'added'}
+              className={`flex items-center justify-center gap-2 px-6 py-3 text-white rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg min-w-[140px] ${
+                cartButtonState === 'added'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500'
+                  : cartButtonState === 'adding'
+                  ? 'bg-gradient-to-r from-amber-700 to-amber-600'
+                  : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600'
+              }`}
             >
-              <ShoppingBag size={18} />
-              Add to Cart
+              {cartButtonState === 'added' ? (
+                <>
+                  <Check size={18} />
+                  Added!
+                </>
+              ) : cartButtonState === 'adding' ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <ShoppingBag size={18} />
+                  Add to Cart
+                </>
+              )}
             </button>
             <button
               onClick={quickView}
@@ -272,11 +297,33 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 e.preventDefault();
                 addToCart();
               }}
-              disabled={product.stock === 0}
-              className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-white py-3 rounded-lg font-medium hover:from-amber-700 hover:to-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
+              disabled={product.stock === 0 || cartButtonState === 'adding' || cartButtonState === 'added'}
+              className={`w-full text-white py-3 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg ${
+                cartButtonState === 'added'
+                  ? 'bg-gradient-to-r from-emerald-600 to-emerald-500'
+                  : cartButtonState === 'adding'
+                  ? 'bg-gradient-to-r from-amber-700 to-amber-600'
+                  : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600'
+              }`}
             >
-              <ShoppingBag size={18} />
-              {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+              {cartButtonState === 'added' ? (
+                <>
+                  <Check size={18} />
+                  Added to Cart!
+                </>
+              ) : cartButtonState === 'adding' ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Adding...
+                </>
+              ) : product.stock === 0 ? (
+                'Out of Stock'
+              ) : (
+                <>
+                  <ShoppingBag size={18} />
+                  Add to Cart
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -336,8 +383,6 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
             {product.sizes.length} sizes
           </div>
         </div>
-
-      
       </div>
     </motion.div>
   );
