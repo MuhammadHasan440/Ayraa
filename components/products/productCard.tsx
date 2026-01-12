@@ -83,11 +83,7 @@ export default function ProductCard({ product, view = 'grid', className = '' }: 
                 </div>
               </div>
             )}
-            {product.originalPrice && (
-              <div className="absolute top-3 right-3 px-3 py-1 bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
-                SALE
-              </div>
-            )}
+           
           </div>
         </Link>
 
