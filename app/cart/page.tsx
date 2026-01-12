@@ -27,7 +27,9 @@ import {
   Package,
   CheckCircle,
   CreditCard,
-  Star
+  Star,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useCart } from '@/lib/context/CartContext';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -52,6 +54,7 @@ export default function CartPage() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [showPromoInput, setShowPromoInput] = useState(false);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
   const updateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -413,39 +416,43 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary - Fixed Layout */}
           <div className="lg:col-span-1">
-            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 p-6 sticky top-8">
-              <h2 className="text-xl font-bold mb-6 text-amber-200">Order Summary</h2>
+            {/* Main Order Summary Card */}
+            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700 overflow-hidden mb-6">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-700">
+                <h2 className="text-xl font-bold text-amber-200">Order Summary</h2>
+              </div>
 
-              {/* Summary Details */}
-              <div className="space-y-4 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Subtotal</span>
+              {/* Price Breakdown */}
+              <div className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Subtotal ({state.itemCount} items)</span>
                   <span className="font-medium text-white">{formatPKR(calculateSubtotal())}</span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Shipping</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Shipping</span>
                   <span className={calculateShipping() === 0 ? 'text-emerald-400 font-medium' : 'text-white'}>
                     {calculateShipping() === 0 ? 'FREE' : formatPKR(calculateShipping())}
                   </span>
                 </div>
                 
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Tax (16%)</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Tax (16%)</span>
                   <span className="text-white">{formatPKR(calculateTax())}</span>
                 </div>
 
-                {/* Shipping Progress */}
+                {/* Shipping Progress Bar */}
                 {calculateShipping() > 0 && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-amber-900/20 to-amber-800/20 rounded-xl border border-amber-800/30">
+                  <div className="mt-6 p-4 bg-gradient-to-r from-amber-900/20 to-amber-800/20 rounded-xl border border-amber-800/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-amber-300">
                         Add {formatPKR(FREE_SHIPPING_THRESHOLD - state.total)} for free shipping!
                       </span>
                       <span className="text-sm font-bold text-amber-300">
-                        {formatPKR(state.total)} / {formatPKR(FREE_SHIPPING_THRESHOLD)}
+                        {Math.round((state.total / FREE_SHIPPING_THRESHOLD) * 100)}%
                       </span>
                     </div>
                     <div className="h-2 bg-amber-900/30 rounded-full overflow-hidden">
@@ -454,120 +461,180 @@ export default function CartPage() {
                         style={{ width: `${Math.min((state.total / FREE_SHIPPING_THRESHOLD) * 100, 100)}%` }}
                       ></div>
                     </div>
+                    <div className="flex justify-between text-xs text-amber-400/70 mt-1">
+                      <span>{formatPKR(0)}</span>
+                      <span>{formatPKR(FREE_SHIPPING_THRESHOLD)}</span>
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {/* Total */}
-              <div className="border-t border-slate-700 pt-4 mb-6">
-                <div className="flex justify-between text-xl font-bold">
-                  <span className="text-white">Total</span>
-                  <span className="bg-gradient-to-r from-amber-300 to-amber-200 bg-clip-text text-transparent">
-                    {formatPKR(calculateTotal())}
-                  </span>
+                {/* Total Amount */}
+                <div className="border-t border-slate-700 pt-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-lg font-bold text-white">Total Amount</div>
+                      <p className="text-sm text-slate-400 mt-1">
+                        {calculateShipping() === 0 ? 'Free shipping included' : `Shipping: ${formatPKR(calculateShipping())}`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold bg-gradient-to-r from-amber-300 to-amber-200 bg-clip-text text-transparent">
+                        {formatPKR(calculateTotal())}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">PKR</p>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-slate-400 mt-2">
-                  Including {formatPKR(calculateTax())} in taxes
-                </p>
               </div>
 
-              {/* Checkout Button */}
-              {user ? (
-                <button
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                  className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-white py-4 rounded-xl hover:from-amber-700 hover:to-amber-600 transition-all font-medium flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed mb-4 shadow-lg"
-                >
-                  {isCheckingOut ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Proceed to Checkout
-                      <ArrowRight size={20} />
-                    </>
-                  )}
-                </button>
-              ) : (
-                <div className="space-y-4">
+              {/* Checkout Button Section */}
+              <div className="p-6 border-t border-slate-700 bg-slate-900/20">
+                {user ? (
                   <button
                     onClick={handleCheckout}
-                    className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-white py-4 rounded-xl hover:from-amber-700 hover:to-amber-600 transition-all font-medium flex items-center justify-center gap-3 mb-2 shadow-lg"
+                    disabled={isCheckingOut}
+                    className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
-                    <ArrowRight size={20} />
-                    Proceed to Checkout
+                    {isCheckingOut ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard size={20} />
+                        Proceed to Checkout
+                        <ArrowRight size={20} />
+                      </>
+                    )}
                   </button>
-                  <p className="text-sm text-center text-slate-400">
-                    You'll be asked to log in or create an account to continue
-                  </p>
-                </div>
-              )}
-
-              {/* User Status Indicator */}
-              <div className="mb-4 p-3 bg-slate-800/30 rounded-xl border border-slate-700">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="text-slate-400">Account Status:</span>
-                  <span className={`font-medium ${user ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {user ? `Logged in` : 'Guest User'}
-                  </span>
-                </div>
-                {!user && (
-                  <p className="text-xs text-slate-500">
-                    <Link href="/login" className="text-amber-400 hover:text-amber-300 hover:underline">
-                      Sign in
-                    </Link> for faster checkout and order tracking
-                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleCheckout}
+                      className="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-3 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      <ArrowRight size={20} />
+                      Proceed to Checkout
+                    </button>
+                    <p className="text-sm text-center text-slate-400 px-2">
+                      You'll be asked to log in or create an account to continue
+                    </p>
+                  </div>
                 )}
-              </div>
 
-              {/* Security Badge */}
-              <div className="flex items-center justify-center gap-2 text-sm text-slate-400 mb-6 p-3 bg-slate-800/30 rounded-xl">
-                <Lock size={16} className="text-emerald-400" />
-                <span>Secure checkout • SSL encrypted</span>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="border-t border-slate-700 pt-6">
-                <p className="text-sm font-medium mb-3 text-slate-300">We Accept</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Visa', 'Mastercard', 'JazzCash', 'Easypaisa', 'Bank Transfer', 'COD'].map((method) => (
-                    <div key={method} className="px-3 py-2 bg-slate-800/50 rounded-lg text-sm text-slate-300 border border-slate-700">
-                      {method}
+                {/* User Status - Compact */}
+                <div className="mt-4 pt-4 border-t border-slate-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {user ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-amber-400" />
+                      )}
+                      <span className="text-sm text-slate-300">
+                        {user ? 'Logged in' : 'Guest checkout'}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Guarantee */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 rounded-xl border border-emerald-800/30">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-emerald-300 mb-1">Shopping Guarantee</h4>
-                    <ul className="text-emerald-400 text-sm space-y-1">
-                      <li>• 30-day easy returns</li>
-                      <li>• Free shipping over {formatPKR(FREE_SHIPPING_THRESHOLD)}</li>
-                      <li>• Price match guarantee</li>
-                      <li>• 6-month warranty</li>
-                    </ul>
+                    {!user && (
+                      <Link 
+                        href="/login" 
+                        className="text-sm text-amber-400 hover:text-amber-300 hover:underline"
+                      >
+                        Sign in
+                      </Link>
+                    )}
                   </div>
                 </div>
+              </div>
+
+              {/* Collapsible Payment Methods */}
+              <div className="border-t border-slate-700">
+                <button
+                  onClick={() => setShowPaymentMethods(!showPaymentMethods)}
+                  className="w-full p-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-emerald-400" />
+                    <span className="text-sm font-medium text-slate-300">Payment & Security</span>
+                  </div>
+                  {showPaymentMethods ? (
+                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-400" />
+                  )}
+                </button>
+                
+                <AnimatePresence>
+                  {showPaymentMethods && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 space-y-4">
+                        {/* Security Info */}
+                        <div className="flex items-center justify-center gap-2 text-sm text-slate-300 p-3 bg-slate-800/30 rounded-xl">
+                          <Lock className="w-4 h-4 text-emerald-400" />
+                          <span>Secure SSL Encryption • 100% Safe</span>
+                        </div>
+
+                        {/* Payment Methods */}
+                        <div>
+                          <p className="text-sm font-medium mb-2 text-slate-300">Accepted Payment Methods</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {['Visa', 'Mastercard', 'JazzCash', 'Easypaisa', 'Bank', 'COD'].map((method) => (
+                              <div 
+                                key={method} 
+                                className="px-2 py-1.5 bg-slate-800/50 rounded-lg text-xs text-slate-300 border border-slate-700 text-center hover:bg-slate-800/70 transition-colors"
+                              >
+                                {method}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
+            {/* Shopping Guarantee Card */}
+            <div className="mb-6 p-5 bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 rounded-2xl border border-emerald-800/30">
+              <div className="flex items-center gap-3 mb-3">
+                <Star className="text-emerald-400 w-5 h-5" />
+                <h4 className="font-medium text-emerald-300">AYRAA Shopping Guarantee</h4>
+              </div>
+              <ul className="text-sm text-emerald-400/90 space-y-2 pl-8">
+                <li className="relative before:content-['✓'] before:absolute before:-left-4">
+                  30-day easy returns
+                </li>
+                <li className="relative before:content-['✓'] before:absolute before:-left-4">
+                  Free shipping over {formatPKR(FREE_SHIPPING_THRESHOLD)}
+                </li>
+                <li className="relative before:content-['✓'] before:absolute before:-left-4">
+                  6-month warranty on all products
+                </li>
+                <li className="relative before:content-['✓'] before:absolute before:-left-4">
+                  Price match guarantee
+                </li>
+              </ul>
+            </div>
+
             {/* Features Sidebar */}
-            <div className="mt-6 space-y-3">
-              {features.map((feature) => (
-                <div key={feature.title} className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${feature.bg}`}>
-                    <div className={feature.color}>
-                      {feature.icon}
-                    </div>
+            <div className="space-y-3">
+              {features.map((feature, index) => (
+                <div 
+                  key={feature.title} 
+                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700 hover:border-slate-600 transition-all duration-300"
+                >
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${feature.bg} ${feature.color}`}>
+                    {feature.icon}
                   </div>
-                  <div>
-                    <h4 className="font-medium text-white">{feature.title}</h4>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-white mb-0.5">{feature.title}</h4>
                     <p className="text-sm text-slate-400">{feature.description}</p>
                   </div>
                 </div>
