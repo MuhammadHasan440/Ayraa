@@ -335,12 +335,12 @@ h6 { font-size: 1rem; }
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #fda4af;
+  background-color: #111827;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #fb7185;
+  background-color: #243250;
 }
 
 .navbar {

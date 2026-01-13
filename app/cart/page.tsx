@@ -84,8 +84,8 @@ export default function CartPage() {
   };
 
   const calculateSubtotal = () => state.total;
-  const calculateShipping = () => state.total > FREE_SHIPPING_THRESHOLD ? 0 : 500; // PKR 500 shipping
-  const calculateTax = () => state.total * 0.16; // 16% tax for Pakistan
+  const calculateShipping = () => state.total > FREE_SHIPPING_THRESHOLD ? 0 : 200; // PKR 200 shipping
+  const calculateTax = () => state.total * 0.05; // 5% tax for Pakistan
   const calculateTotal = () => calculateSubtotal() + calculateShipping() + calculateTax();
 
   const features = [
@@ -440,7 +440,7 @@ export default function CartPage() {
                 </div>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Tax (16%)</span>
+                  <span className="text-slate-300">Tax (5%)</span>
                   <span className="text-white">{formatPKR(calculateTax())}</span>
                 </div>
 
@@ -584,7 +584,7 @@ export default function CartPage() {
                         <div>
                           <p className="text-sm font-medium mb-2 text-slate-300">Accepted Payment Methods</p>
                           <div className="grid grid-cols-3 gap-2">
-                            {['Visa', 'Mastercard', 'JazzCash', 'Easypaisa', 'Bank', 'COD'].map((method) => (
+                            {[ 'Easypaisa','COD'].map((method) => (
                               <div 
                                 key={method} 
                                 className="px-2 py-1.5 bg-slate-800/50 rounded-lg text-xs text-slate-300 border border-slate-700 text-center hover:bg-slate-800/70 transition-colors"

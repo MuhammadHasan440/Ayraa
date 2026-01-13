@@ -7,7 +7,6 @@ import {
   Lock, 
   Shield, 
   Truck, 
-  CreditCard,
   Smartphone,
   ArrowLeft,
   CheckCircle,
@@ -17,15 +16,14 @@ import {
   MapPin,
   User,
   Home,
-  Tag,
-  Gift,
-  Zap,
   Crown,
   Gem,
   Shirt,
   Watch,
   SprayCan,
-  Footprints
+  Footprints,
+  Wallet,
+  CreditCard
 } from 'lucide-react';
 import { useCart } from '@/lib/context/CartContext';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -75,7 +73,7 @@ export default function CheckoutPage() {
     phone: '+92',
     saveInfo: false,
   });
-  const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [paymentMethod, setPaymentMethod] = useState('easypaisa');
   const [easypaisaNumber, setEasypaisaNumber] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -109,6 +107,14 @@ export default function CheckoutPage() {
     
     if (paymentMethod === 'easypaisa' && !easypaisaNumber.trim()) {
       newErrors.easypaisaNumber = 'Easypaisa number is required';
+    }
+    
+    if (paymentMethod === 'easypaisa') {
+      const easypaisaRegex = /^(03|033|034|035|036|037|038|039)[0-9]{9}$/;
+      const cleanedNumber = easypaisaNumber.replace(/\s/g, '');
+      if (cleanedNumber && !easypaisaRegex.test(cleanedNumber)) {
+        newErrors.easypaisaNumber = 'Valid Easypaisa number required (e.g., 03XX XXXXXXX)';
+      }
     }
     
     setErrors(newErrors);
@@ -183,7 +189,7 @@ export default function CheckoutPage() {
         paymentDetails: paymentMethod === 'easypaisa' ? {
           easypaisaNumber: easypaisaNumber,
         } : {},
-        paymentStatus: 'pending',
+        paymentStatus: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -221,7 +227,6 @@ export default function CheckoutPage() {
 
       const emailPromise = sendOrderConfirmation(orderId, emailOrderDetails);
 
-      // Custom toast styling for dark theme
       toast.success(
         (t) => (
           <div className="flex items-center gap-3">
@@ -231,6 +236,22 @@ export default function CheckoutPage() {
               <p className="text-sm text-slate-400 mt-1">
                 Order ID: <span className="text-amber-300">{orderId}</span>
               </p>
+              {paymentMethod === 'easypaisa' && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Smartphone size={14} className="text-emerald-400" />
+                  <span className="text-xs text-slate-500">
+                    Payment instructions sent to {easypaisaNumber}
+                  </span>
+                </div>
+              )}
+              {paymentMethod === 'cod' && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Wallet size={14} className="text-amber-400" />
+                  <span className="text-xs text-slate-500">
+                    Pay with cash when your order arrives
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-1">
                 <Mail size={14} className="text-amber-400" />
                 <span className="text-xs text-slate-500">
@@ -367,6 +388,16 @@ export default function CheckoutPage() {
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleEasypaisaNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 11) {
+      setEasypaisaNumber(value);
+      if (errors.easypaisaNumber) {
+        setErrors(prev => ({ ...prev, easypaisaNumber: '' }));
+      }
     }
   };
 
@@ -650,26 +681,7 @@ export default function CheckoutPage() {
                 </div>
                 
                 <div className="space-y-3">
-                  <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all ${
-                    paymentMethod === 'credit-card' 
-                      ? 'bg-gradient-to-r from-amber-900/20 to-amber-800/20 border border-amber-700/50' 
-                      : 'border border-slate-700 hover:border-slate-600 hover:bg-slate-800/30'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="credit-card"
-                      checked={paymentMethod === 'credit-card'}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-4 h-4 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-600"
-                    />
-                    <CreditCard className="text-amber-400" size={20} />
-                    <div className="flex-1">
-                      <span className="font-medium text-white">Credit/Debit Card</span>
-                      <p className="text-sm text-slate-400">Pay with Visa, MasterCard, or UnionPay</p>
-                    </div>
-                  </label>
-                  
+                  {/* Easypaisa Option */}
                   <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all ${
                     paymentMethod === 'easypaisa' 
                       ? 'bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-700/50' 
@@ -689,6 +701,27 @@ export default function CheckoutPage() {
                       <p className="text-sm text-slate-400">Pay with your Easypaisa wallet</p>
                     </div>
                   </label>
+                  
+                  {/* Cash on Delivery Option */}
+                  <label className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all ${
+                    paymentMethod === 'cod' 
+                      ? 'bg-gradient-to-r from-amber-900/20 to-amber-800/20 border border-amber-700/50' 
+                      : 'border border-slate-700 hover:border-slate-600 hover:bg-slate-800/30'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cod"
+                      checked={paymentMethod === 'cod'}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-4 h-4 text-amber-500 focus:ring-amber-500 bg-slate-800 border-slate-600"
+                    />
+                    <Wallet className="text-amber-400" size={20} />
+                    <div className="flex-1">
+                      <span className="font-medium text-white">Cash on Delivery (COD)</span>
+                      <p className="text-sm text-slate-400">Pay with cash when you receive your order</p>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Easypaisa Number Input */}
@@ -701,26 +734,49 @@ export default function CheckoutPage() {
                     <label className="block text-sm font-medium mb-2 text-emerald-300">
                       Easypaisa Mobile Account Number *
                     </label>
-                    <input
-                      type="tel"
-                      value={easypaisaNumber}
-                      onChange={(e) => {
-                        setEasypaisaNumber(e.target.value);
-                        if (errors.easypaisaNumber) {
-                          setErrors(prev => ({ ...prev, easypaisaNumber: '' }));
-                        }
-                      }}
-                      className={`w-full px-4 py-3 bg-slate-800/50 border rounded-xl focus:outline-none focus:ring-2 ${
-                        errors.easypaisaNumber ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-emerald-500 focus:border-transparent'
-                      } text-white placeholder-slate-500`}
-                      placeholder="03XX XXXXXXX"
-                    />
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        value={easypaisaNumber}
+                        onChange={handleEasypaisaNumberChange}
+                        className={`w-full px-4 py-3 pl-10 bg-slate-800/50 border rounded-xl focus:outline-none focus:ring-2 ${
+                          errors.easypaisaNumber ? 'border-red-500 focus:ring-red-500' : 'border-slate-700 focus:ring-emerald-500 focus:border-transparent'
+                        } text-white placeholder-slate-500`}
+                        placeholder="03XX XXXXXXX"
+                        maxLength={11}
+                      />
+                      <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" size={16} />
+                    </div>
                     {errors.easypaisaNumber && (
                       <p className="text-red-400 text-sm mt-1">{errors.easypaisaNumber}</p>
                     )}
                     <p className="text-xs text-emerald-400 mt-2">
                       After placing order, you'll receive payment instructions via SMS
                     </p>
+                  </motion.div>
+                )}
+
+                {/* Cash on Delivery Notice */}
+                {paymentMethod === 'cod' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 p-4 bg-gradient-to-r from-amber-900/20 to-amber-800/20 rounded-xl border border-amber-700/50"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Wallet className="text-amber-400 mt-0.5" size={18} />
+                      <div>
+                        <p className="text-sm font-medium text-amber-300">
+                          Cash on Delivery Information
+                        </p>
+                        <p className="text-sm text-amber-400/90 mt-1">
+                          Please keep exact cash amount ready. Our delivery agent will collect payment when your order arrives.
+                        </p>
+                        <p className="text-xs text-amber-500/90 mt-2">
+                          Note: A valid phone number is required for COD orders.
+                        </p>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </div>
@@ -879,10 +935,8 @@ export default function CheckoutPage() {
               
               {/* Payment Icons */}
               <div className="mt-6 flex flex-wrap gap-2">
-                <div className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700">Visa</div>
-                <div className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700">MasterCard</div>
                 <div className="px-2 py-1 bg-emerald-900/30 text-emerald-400 text-xs rounded-lg border border-emerald-800/50">Easypaisa</div>
-                <div className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700">JazzCash</div>
+                <div className="px-2 py-1 bg-amber-900/30 text-amber-400 text-xs rounded-lg border border-amber-800/50">Cash on Delivery</div>
               </div>
               
               {/* Return Policy */}
